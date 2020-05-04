@@ -21,16 +21,17 @@ public class KVMManager {
 	private Rectangle screenbound;
 
 	public KVMManager() throws AWTException {
+		robot = new java.awt.Robot();
+		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+		GraphicsDevice gd = ge.getDefaultScreenDevice();
+		screenbound = gd.getDefaultConfiguration().getBounds();
+		keymap = new HashMap<>();
+		assignKeyMap();
 		try {
 			cap = new WindowCapture();
 		} catch (Throwable e) {
-			robot = new java.awt.Robot();
-			GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-			GraphicsDevice gd = ge.getDefaultScreenDevice();
-			screenbound = gd.getDefaultConfiguration().getBounds();
+			// ignore
 		}
-		keymap = new HashMap<>();
-		assignKeyMap();
 	}
 
 	private void assignKeyMap() {
