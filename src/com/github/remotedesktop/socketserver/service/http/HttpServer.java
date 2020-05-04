@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 import com.github.remotedesktop.socketserver.SocketServer;
 import com.github.remotedesktop.socketserver.service.KeyboardAndMouseSerializer;
 import com.github.remotedesktop.socketserver.service.TileSerializer;
-import com.github.remotedesktop.socketserver.service.TizeSerializationManaer;
+import com.github.remotedesktop.socketserver.service.TileSerializationManaer;
 
 public class HttpServer extends SocketServer {
 	public static final String HTTP_OK = "200 OK";
@@ -37,15 +37,15 @@ public class HttpServer extends SocketServer {
 	public static final String TILEEXT = "JPG";
 	private static final byte[] NO_WEBSOCKET_REQUEST = new byte[0];
 
-	private final TizeSerializationManaer tileman;
+	private final TileSerializationManaer tileman;
 	private final KeyboardAndMouseSerializer kvmman;
 	private final WebSocketEncoderDecoder websocketProtocolParser;
 
 	public HttpServer(String hostname, int port) throws IOException {
 		super("HttpServer", hostname, port);
 		kvmman = new KeyboardAndMouseSerializer();
-		tileman = new TizeSerializationManaer();
-		this.websocketProtocolParser = new WebSocketEncoderDecoder();
+		tileman = new TileSerializationManaer();
+		websocketProtocolParser = new WebSocketEncoderDecoder();
 	}
 
 	public int getPort() throws IOException {
@@ -144,16 +144,8 @@ public class HttpServer extends SocketServer {
 			String path = req.getURI().getPath();
 			setDebugContext(key, path);
 			switch (path) {
-			case "/tile": { // tile prrocessed, write back document containing the links to the images
-				if (getMulticastGroup(key)==null) {
-					setMulticastGroup(key, MulticastGroup.SENDER);
-					System.out.println("DisplayServer connected: " + key.attachment());
-				}
-				
-				tileman.processImage(req.getData(), Integer.parseInt(req.getParam("x")),
-						Integer.parseInt(req.getParam("y")), Integer.parseInt(req.getParam("w")),
-						Integer.parseInt(req.getParam("h")));
-
+			
+			case "/tiledoc": { // tiles prrocessed, write back document containing the links to the images
 				StringBuilder sb = new StringBuilder();
 				Random r = new Random(System.currentTimeMillis());
 				for (int i = 0; i < tileman.getNumXTile(); i++) {
@@ -172,13 +164,21 @@ public class HttpServer extends SocketServer {
 					}
 				}
 				if (sb.length() > 0) {
-					try {
 						byte[] getImagesData = websocketProtocolParser.encodeFrame(sb.toString());
 						writeToGroup(MulticastGroup.RECEIVER, ByteBuffer.wrap(getImagesData));
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
 				}
+				break;
+			}
+			
+			case "/tile": { // tile prrocessed, 
+				if (getMulticastGroup(key)==null) {
+					setMulticastGroup(key, MulticastGroup.SENDER);
+					System.out.println("DisplayServer connected: " + key.attachment());
+				}
+				
+				tileman.processImage(req.getData(), Integer.parseInt(req.getParam("x")),
+						Integer.parseInt(req.getParam("y")), Integer.parseInt(req.getParam("w")),
+						Integer.parseInt(req.getParam("h")));
 
 				break;
 			}
@@ -190,8 +190,7 @@ public class HttpServer extends SocketServer {
 			}
 			case "/sendKey": {
 //				System.out.println("httpserver: ctrl data received: /sendkey");
-				kvmman.reset();
-				kvmman.keyStroke(Integer.parseInt(req.getParam("key")), Integer.parseInt(req.getParam("mask")));
+				kvmman.keyStroke(Integer.parseInt(req.getParam("key")),Integer.parseInt(req.getParam("code")), Integer.parseInt(req.getParam("mask")));
 				try {
 					writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
 				} catch (Exception e) {
@@ -200,7 +199,6 @@ public class HttpServer extends SocketServer {
 				break;
 			}
 			case "/sendMouse": {
-				kvmman.reset();
 				int x = Integer.parseInt(req.getParam("x"));
 				int y = Integer.parseInt(req.getParam("y"));
 				String act = req.getParam("act");
@@ -221,7 +219,6 @@ public class HttpServer extends SocketServer {
 					kvmman.mouseStroke(button);
 					kvmman.mouseStroke(button);
 				}
-				System.out.println("/sendMouse");
 				try {
 					writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
 				} catch (Exception e) {
@@ -240,8 +237,6 @@ public class HttpServer extends SocketServer {
 					res.dataStream(HTTP_OK, mimeType, tile.getData());
 				}
 				writeTo(key, ByteBuffer.wrap(res.getResponse()));
-//				key.cancel();
-//				close(channel);
 				break;
 			}
 			case "/remotedesktop.html": {
@@ -306,5 +301,13 @@ public class HttpServer extends SocketServer {
 				out.write(buf, 0, c);
 			}
 			return out.toByteArray();
+	}
+	  public void cancelKey(SelectionKey key) {
+	      key.cancel();
+	   }
+
+	@Override
+	protected void select() throws IOException {
+		selector.select();
 	}
 }

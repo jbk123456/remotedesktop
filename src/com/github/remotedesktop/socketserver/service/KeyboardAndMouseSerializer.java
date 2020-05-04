@@ -9,25 +9,26 @@ public class KeyboardAndMouseSerializer {
 	public KeyboardAndMouseSerializer() throws IOException {
 		b = new StringBuilder();
 	}
-	public void reset() {
-		b.setLength(0);
-	}
 	public byte[] getBytes() throws IOException {
-		return b.toString().getBytes();
+		byte[] result = b.toString().getBytes();
+		b.setLength(0);
+		return result;
 	}
 
-	private void writekeyStroke(int scancode, int mask) throws IOException {
+	private void writekeyStroke(int key, int scancode, int mask) throws IOException {
 		b.append("GET /k");
 		b.append("?");
-		b.append("v=");
+		b.append("k=");
+		b.append(key);
+		b.append("&v=");
 		b.append(scancode);
 		b.append("&mask=");
 		b.append(mask);
 		b.append("\r\n\r\n");
 	}
 
-	public void keyStroke(int keycode, int mask) throws IOException {
-		writekeyStroke(keycode, mask);
+	public void keyStroke(int key, int keycode, int mask) throws IOException {
+		writekeyStroke(key, keycode, mask);
 	}
 
 	public void mouseMove(int x, int y) throws IOException {

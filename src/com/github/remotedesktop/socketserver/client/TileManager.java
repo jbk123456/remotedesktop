@@ -4,7 +4,7 @@ import java.awt.image.BufferedImage;
 
 public class TileManager {
 
-	public final int MAX_TILE = 10;
+	public static final int MAX_TILE = 5;
 	private Tile tiles[][];
 	private int numxtile;
 	private int numytile;
@@ -13,7 +13,6 @@ public class TileManager {
 	private int screenwidth;
 	private int screenheight;
 
-	/** Creates a new instance of TileManager */
 	public TileManager() {
 		tiles = new Tile[MAX_TILE][MAX_TILE];
 		numxtile = MAX_TILE;
@@ -33,7 +32,6 @@ public class TileManager {
 		int subw, subh;
 		numxtile = x;
 		numytile = y;
-		setSize(screenwidth, screenheight);
 		for (int i = 0; i < numxtile; i++) {
 			for (int j = 0; j < numytile; j++) {
 				if (tiles[i][j] == null)

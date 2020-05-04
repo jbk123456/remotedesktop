@@ -51,6 +51,17 @@ public class HttpTestClient extends SocketServer {
 		write(key);
 	}
 
+	@Override
+	protected void cancelKey(SelectionKey key) {
+		key.cancel();
+		
+	}
+
+	@Override
+	protected void select() throws IOException {
+		selector.select();
+	}
+
 //	public static void main(String[] args) throws Throwable {
 //		ChatServer server = new ChatServer(args[0], Integer.parseInt(args[1]));
 //		server.start();

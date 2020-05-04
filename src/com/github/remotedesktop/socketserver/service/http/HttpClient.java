@@ -2,7 +2,6 @@ package com.github.remotedesktop.socketserver.service.http;
 
 import static java.nio.channels.SelectionKey.OP_CONNECT;
 import static java.nio.channels.SelectionKey.OP_READ;
-import static java.nio.channels.SelectionKey.OP_WRITE;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -54,30 +53,48 @@ public class HttpClient extends SocketServer {
 	protected void handleIncomingData(SelectionKey sender, byte[] data) throws IOException {
 		handler.onMessage(sender, data);
 	}
-	
+
+	@Override
+	protected void select() throws IOException {
+//		selector.select(timeout);
+		selector.select();
+	}
+
 	@Override
 	protected void write(SelectionKey key) throws IOException {
-		SocketChannel channel = (SocketChannel) key.channel();
-		while (!messages.isEmpty()) {
-			ByteBuffer message = messages.poll();
-			while (message.hasRemaining()) {
-				channel.write(message);
+		try {
+			SocketChannel channel = (SocketChannel) key.channel();
+			while (!messages.isEmpty()) {
+				ByteBuffer message = messages.poll();
+				while (message.hasRemaining()) {
+					channel.write(message);
+				}
 			}
+			key.interestOps(OP_READ);
+		} catch (IOException e) {
+			// disconnect and try to reconnect
+			throw new IllegalStateException(e);
 		}
-		key.interestOps(OP_READ);
+	}
+
+	public void writeToServerBuffer(ByteBuffer buffer) {
+		messages.add(buffer);
 	}
 
 	public void writeToServer(ByteBuffer buffer) throws IOException {
 		messages.add(buffer);
 		SelectionKey key = channel.keyFor(selector);
-		
-		if (key==null) { // force reconnect
+
+		if (key == null) { // force reconnect
 			close(selector);
+			return;
 		}
-		
-		if (key.isValid()) {
-			key.interestOps(OP_WRITE);
-		}
+		write(key);
+	}
+
+	@Override
+	protected void cancelKey(SelectionKey key) {
+		key.cancel();
 	}
 
 }

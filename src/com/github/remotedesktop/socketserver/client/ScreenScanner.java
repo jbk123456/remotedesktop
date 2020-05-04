@@ -1,5 +1,7 @@
 package com.github.remotedesktop.socketserver.client;
 
+import java.awt.image.BufferedImage;
+
 import com.github.remotedesktop.Config;
 
 public class ScreenScanner implements Runnable {
@@ -16,15 +18,14 @@ public class ScreenScanner implements Runnable {
 	}
 
 	public void run() {
-
-		tileman.setSize((int) kvmman.getScreenBound().getWidth(), (int) kvmman.getScreenBound().getHeight());
+	   BufferedImage captureScreen = kvmman.captureScreen();
+      tileman.setSize((int)captureScreen.getWidth(), (int)captureScreen.getHeight());
 		while (true) {
 			try {
 
-				tileman.processImage(kvmman.captureScreen(), 6, 6);
+				tileman.processImage(kvmman.captureScreen(), TileManager.MAX_TILE, TileManager.MAX_TILE);
 				notifyObservers();
 				Thread.sleep((int) (1000 / Config.fps));
-				//Thread.sleep(10000);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -41,6 +42,7 @@ public class ScreenScanner implements Runnable {
 				tileman.getTile(i, j).clearDirty();
 			}
 		}
+		tileobs.updateTileFinish();
 	}
 
 	public void startScreenScanning() {

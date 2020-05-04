@@ -18,7 +18,6 @@ import java.util.Iterator;
 
 public abstract class SocketServer implements Runnable {
 	public static final int BUFFER_SIZE = 1 * 1024 * 1024;
-	public static final long TIMEOUT = 0;
 
 	protected final String id;
 	protected final ByteBuffer buffer;
@@ -65,6 +64,10 @@ public abstract class SocketServer implements Runnable {
 
 	protected abstract SelectionKey channelRegister(Selector selector) throws IOException;
 
+	protected abstract void select() throws IOException;
+
+	protected abstract void cancelKey(SelectionKey key);
+
 	private final Selector selector() throws IOException {
 		Selector selector = openSelector();
 		registerKeyForAttachments(channelRegister(selector));
@@ -94,7 +97,6 @@ public abstract class SocketServer implements Runnable {
 	}
 
 	protected void writeToGroup(MulticastGroup role, ByteBuffer buffer) throws IOException {
-		System.out.println("keyslengh:::" + selector.keys().size());
 		int clients = 0;
 		buffer.mark();
 		for (SelectionKey key : selector.keys()) {
@@ -102,8 +104,13 @@ public abstract class SocketServer implements Runnable {
 				buffer.reset();
 				SocketChannel channel = (SocketChannel) key.channel();
 				clients++;
-				while (buffer.hasRemaining()) {
-					channel.write(buffer);
+				try {
+					while (buffer.hasRemaining()) {
+						channel.write(buffer);
+					}
+				} catch (IOException e) {
+					// do not let the exception escape to top-level
+					cancelKey(key);
 				}
 			}
 		}
@@ -141,10 +148,10 @@ public abstract class SocketServer implements Runnable {
 
 	private void runMainLoop() {
 		try {
-			selector.select(TIMEOUT);
+			select();
 
 			Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-			//System.out.println("main oop key length:::" + selector.keys().size());
+			// System.out.println("main oop key length:::" + selector.keys().size());
 
 			while (iterator.hasNext()) {
 				SelectionKey key = iterator.next();
@@ -152,7 +159,6 @@ public abstract class SocketServer implements Runnable {
 					iterator.remove();
 
 					if (!key.isValid()) {
-						System.out.println("IGNORING key:::" + key.attachment());
 						continue;
 					}
 
@@ -166,10 +172,11 @@ public abstract class SocketServer implements Runnable {
 						write(key);
 					}
 				} catch (IOException e) {
-
+					e.printStackTrace();
+					cancelKey(key);
 					// Channel is no longer active - clean up and try again
-					key.cancel();
-					throw e;
+					// key.cancel();
+					// throw e;
 				}
 			}
 		} catch (Exception e) {
@@ -180,6 +187,8 @@ public abstract class SocketServer implements Runnable {
 					close(selector);
 				if (channel.isOpen())
 					close(channel);
+
+				// try again
 				this.channel = channel(address);
 				this.selector = selector();
 			} catch (Exception ee) {
@@ -216,7 +225,7 @@ public abstract class SocketServer implements Runnable {
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.err.println("FIXME: Tile loading interrupted for KEY:::" + key.attachment());
-				//c = channel.read(buffer);
+				// c = channel.read(buffer);
 			}
 		} while (c > 0);
 
@@ -225,9 +234,9 @@ public abstract class SocketServer implements Runnable {
 			key.cancel();
 			close(key.channel());
 			return;
-		} 
+		}
 		int count = buffer.position();
-		if (count==0) {
+		if (count == 0) {
 			return; // short read, try again
 		}
 		byte[] data;

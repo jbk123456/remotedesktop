@@ -11,27 +11,36 @@ import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.github.remotedesktop.socketserver.client.jna.WindowCapture;
+
 public class KVMManager {
 
-	private Robot robot;
-	private BufferedImage screenimage;
-	private Rectangle screenbound;
 	private Map<Integer, Integer> keymap;
+	private WindowCapture cap;
+	private Robot robot;
+	private Rectangle screenbound;
 
 	public KVMManager() throws AWTException {
-		setScreenBound(getDefaultScreenBound());
-		robot = createRobot();
-		screenimage = null;
+		try {
+			cap = new WindowCapture();
+		} catch (Throwable e) {
+			robot = new java.awt.Robot();
+			GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+			GraphicsDevice gd = ge.getDefaultScreenDevice();
+			screenbound = gd.getDefaultConfiguration().getBounds();
+		}
 		keymap = new HashMap<>();
 		assignKeyMap();
 	}
 
 	private void assignKeyMap() {
-		// First row
-//		keymap.put(new Integer(17), new Integer(KeyEvent.VK_CONTROL)); // Ctrl
-//		keymap.put(new Integer(16), new Integer(KeyEvent.VK_SHIFT)); // Shift
-//		keymap.put(new Integer(18), new Integer(KeyEvent.VK_ALT)); // Alt
-//		keymap.put(new Integer(225), new Integer(KeyEvent.VK_ALT_GRAPH)); // AltGr
+		keymap.put(new Integer(16), new Integer(-2)); // KeyEvent.VK_SHIFT Shift
+		keymap.put(new Integer(17), new Integer(-2)); // KeyEvent.VK_CONTROL Ctrl
+		keymap.put(new Integer(18), new Integer(-2)); // KeyEvent.VK_ALT Alt
+		keymap.put(new Integer(225), new Integer(-2)); // KeyEvent.VK_ALT_GRAPH AltGr
+
+		keymap.put(new Integer(173), new Integer(KeyEvent.VK_MINUS)); // -
+
 		keymap.put(new Integer(27), new Integer(KeyEvent.VK_ESCAPE)); // Esc
 		keymap.put(new Integer(192), new Integer(KeyEvent.VK_BACK_QUOTE)); // `
 		keymap.put(new Integer(49), new Integer(KeyEvent.VK_1)); // 1
@@ -47,7 +56,7 @@ public class KVMManager {
 		keymap.put(new Integer(189), new Integer(KeyEvent.VK_MINUS)); // -
 		keymap.put(new Integer(187), new Integer(KeyEvent.VK_EQUALS)); // =
 		keymap.put(new Integer(8), new Integer(KeyEvent.VK_BACK_SPACE)); // Backspace
-		// Second row
+
 		keymap.put(new Integer(9), new Integer(KeyEvent.VK_TAB)); // Tab
 		keymap.put(new Integer(81), new Integer(KeyEvent.VK_Q)); // Q
 		keymap.put(new Integer(87), new Integer(KeyEvent.VK_W)); // W
@@ -72,7 +81,7 @@ public class KVMManager {
 		keymap.put(new Integer(75), new Integer(KeyEvent.VK_K)); // K
 		keymap.put(new Integer(76), new Integer(KeyEvent.VK_L)); // L
 		keymap.put(new Integer(186), new Integer(KeyEvent.VK_SEMICOLON)); // ;
-		keymap.put(new Integer(222), new Integer(KeyEvent.VK_QUOTE)); // '
+
 		keymap.put(new Integer(13), new Integer(KeyEvent.VK_ENTER)); // Enter
 		keymap.put(new Integer(90), new Integer(KeyEvent.VK_Z)); // Z
 		keymap.put(new Integer(88), new Integer(KeyEvent.VK_X)); // X
@@ -134,16 +143,14 @@ public class KVMManager {
 			return scancode.intValue();
 	}
 
-	private Robot createRobot() throws AWTException {
-			Robot robot = new Robot();
-			//robot.setAutoDelay(200);
-			return robot;
-	}
-
-	public void keyStroke(int keycode, int mask) {
+	public void keyStroke(int key, int keycode, int mask) {
 		int scancode = convAscii(keycode);
+		System.out.println("keycode:::" + keycode + " " + scancode + " " + ((char)key));
 		if (scancode < 0) {
-			return;
+			if (scancode < -1) {
+				return;
+			}
+			askiiKeyStrokeViaAltNumpad(key, mask);
 		}
 		if ((mask & 1) == 1) {
 			robot.keyPress(KeyEvent.VK_SHIFT);
@@ -154,7 +161,6 @@ public class KVMManager {
 		}
 		robot.keyPress(scancode);
 		robot.keyRelease(scancode);
-
 		if ((mask & 1) == 1) {
 			robot.keyRelease(KeyEvent.VK_SHIFT);
 		} else if ((mask & 2) == 2) {
@@ -164,7 +170,25 @@ public class KVMManager {
 		}
 		if (scancode == KeyEvent.VK_ESCAPE) {
 			mouseRelease(7);
+			robot.keyPress(KeyEvent.VK_ALT);
+			robot.keyRelease(KeyEvent.VK_ALT);
+			robot.keyPress(KeyEvent.VK_SHIFT);
+			robot.keyRelease(KeyEvent.VK_SHIFT);
+			robot.keyPress(KeyEvent.VK_CONTROL);
+			robot.keyRelease(KeyEvent.VK_CONTROL);
 		}
+	}
+
+	private void askiiKeyStrokeViaAltNumpad(int key, int mask) {
+		robot.keyPress(KeyEvent.VK_ALT);
+		String charcode = Integer.toString(key);
+		for (char ascii_c : charcode.toCharArray()) {
+			int ascii_n = Integer.parseInt(String.valueOf(ascii_c)) + 96;
+			robot.keyPress(ascii_n);
+			robot.keyRelease(ascii_n);
+		}
+
+		robot.keyRelease(KeyEvent.VK_ALT);
 	}
 
 	public void mouseMove(int x, int y) {
@@ -198,25 +222,13 @@ public class KVMManager {
 		robot.mouseRelease(mask);
 	}
 
-	public void setScreenBound(Rectangle bound) {
-		screenbound = bound;
-	}
-
-	public Rectangle getScreenBound() {
-		return screenbound;
-	}
-
-	public Rectangle getDefaultScreenBound() {
-		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-		GraphicsDevice gd = ge.getDefaultScreenDevice();
-		return gd.getDefaultConfiguration().getBounds();
-	}
-
 	public BufferedImage captureScreen() {
-		//robot.delay(100);
-		screenimage = robot.createScreenCapture(screenbound);
-		return screenimage;
-
+		if (cap!=null) {
+			return cap.getImage();
+		}
+		return robot.createScreenCapture(screenbound);
 	}
+
+
 
 }

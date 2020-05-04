@@ -138,7 +138,6 @@ public class WebSocketEncoderDecoder {
 		mStage = mMasked ? 3 : 4;
 	}
 
-
 	private byte[] writeDecodedFrames() throws IOException {
 		byte[] result = null;
 		;
@@ -197,7 +196,6 @@ public class WebSocketEncoderDecoder {
 		mBuffer.reset();
 	}
 
-	
 	public byte[] encodeFrame(String data) {
 		return encodeFrame(data, OP_TEXT, -1);
 	}

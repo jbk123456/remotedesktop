@@ -47,9 +47,17 @@ public class DisplayServer extends HttpClient implements HttpClient.ResponseHand
 
 		System.arraycopy(req, 0, data, 0, req.length);
 		System.arraycopy(tile.getData(), 0, data, req.length, tile.getData().length);
+		writeToServerBuffer(ByteBuffer.wrap(data));
+	}
+	@Override
+	public void updateTileFinish() {
+		StringBuilder b = new StringBuilder("GET /tiledoc");
+		b.append("\r\n\r\n");
+		byte[] req = b.toString().getBytes();
+
 		try {
 //			System.out.println("displayserver: update tile called");;
-			writeToServer(ByteBuffer.wrap(data));
+			writeToServer(ByteBuffer.wrap(req));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -91,7 +99,7 @@ public class DisplayServer extends HttpClient implements HttpClient.ResponseHand
 
 		switch (path) {
 		case "/k": {
-			kvmman.keyStroke(Integer.parseInt(req.getParam("v")), Integer.parseInt(req.getParam("mask")));
+			kvmman.keyStroke(Integer.parseInt(req.getParam("k")), Integer.parseInt(req.getParam("v")), Integer.parseInt(req.getParam("mask")));
 			break;
 		}
 		case "/m": {
@@ -112,5 +120,8 @@ public class DisplayServer extends HttpClient implements HttpClient.ResponseHand
 		}
 
 		}
+	}
+	public void cancelKey(SelectionKey key) {
+	   key.cancel();
 	}
 }

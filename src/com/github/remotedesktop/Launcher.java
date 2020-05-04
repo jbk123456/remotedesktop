@@ -1,5 +1,7 @@
 package com.github.remotedesktop;
 
+import java.io.IOException;
+
 import com.github.remotedesktop.socketserver.client.DisplayServer;
 import com.github.remotedesktop.socketserver.service.http.HttpServer;
 
@@ -10,11 +12,19 @@ public class Launcher {
 		boolean refreshIni = false;
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].toLowerCase().startsWith("--help")) {
-				System.out.println("Usage: java -jar remotedesktop.jar --service=true --port=6502:  Starts a HTTP Server listening for requests.\r\nUsage: java -jar remotedesktop.jar --service=false --server=IP --port=6502: Connects to HTTP Server reading mouse and keyboard data and sending it the current desktop as a video stream.\r\nOther options: host, port, quality (0.0-1.0), fps");
+				System.out.println("Usage: java -jar remotedesktop.jar --service=true --port=6502:  "
+						+ "Starts a HTTP Server listening for requests.\r\n"
+						+ "Usage: java -jar remotedesktop.jar --service=false --server=IP --port=6502: "
+						+ "Connects to HTTP Server reading mouse and keyboard data and sending it the current "
+						+ "desktop as a video stream.\r\nOther options: daemon (true/false) host, port, quality (0.0-1.0), fps");
 				System.exit(1);
 			}
 			if (args[i].toLowerCase().startsWith("--service=")) {
 				Config.default_start_as_service = args[i].split("=")[1];
+				refreshIni = true;
+			}
+			if (args[i].toLowerCase().startsWith("--daemon=")) {
+				Config.default_start_as_daemon = args[i].split("=")[1];
 				refreshIni = true;
 			}
 			if (args[i].toLowerCase().startsWith("--host=") || args[i].toLowerCase().startsWith("--server=")) {
@@ -39,6 +49,10 @@ public class Launcher {
 			Config.default_start_as_service = System.getProperty(PREFIX + Config.START_AS_SERVICE);
 			refreshIni = true;
 		}
+		if (System.getProperty(PREFIX + Config.START_AS_DAEMON) != null) {
+			Config.default_start_as_daemon = System.getProperty(PREFIX + Config.START_AS_DAEMON);
+			refreshIni = true;
+		}
 		if (System.getProperty(PREFIX + Config.HTTP_SERVER) != null) {
 			Config.default_http_server = System.getProperty(PREFIX + Config.HTTP_SERVER);
 			refreshIni = true;
@@ -57,6 +71,34 @@ public class Launcher {
 		}
 		Config.load("remotedesktop.ini", refreshIni);
 
+		if (Config.start_as_daemon && !Boolean.getBoolean("IGNORE_DAEMON_FLAG")) {
+			final String[] newargs = new String[4];
+
+			newargs[0] = "java";
+			newargs[1] = "-DIGNORE_DAEMON_FLAG=true";
+
+			newargs[2] = "-jar";
+			newargs[3] = "remotedesktop.jar";
+
+			System.in.close();
+			System.out.close();
+			System.err.close();
+
+			new Thread(new Runnable() {
+
+				public void run() {
+					try {
+						Runtime.getRuntime().exec(newargs);
+					} catch (IOException e) {
+						e.printStackTrace();
+						System.exit(13);
+					}
+				}
+			}).start();
+			Thread.sleep(20000);
+			System.exit(0);
+		}
+
 		if (Config.start_as_service) {
 			HttpServer server = new HttpServer(null, Config.http_port);
 			server.start();
@@ -66,4 +108,5 @@ public class Launcher {
 		}
 
 	}
+
 }

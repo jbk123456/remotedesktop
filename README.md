@@ -4,7 +4,7 @@ Remote Desktop Server, Proxy and HTML Viewer written in Java and JavaScript
 ##Building
 
 ```
-$ mkdir bin; (cd src; javac -d ../bin `find . -type d | fgrep socketserver| sed 's|$|/*.java|'` && cp -r META-INF ../bin) && (cd bin; jar cfm ../remotedesktop.jar META-INF/MANIFEST.MF .)
+$ mkdir bin; (cd src; javac -d ../bin `find . -name "*.java"` && cp -r META-INF ../bin) && (cd bin; jar cfm ../remotedesktop.jar META-INF/MANIFEST.MF .)
 ```
 or with docker:
 
