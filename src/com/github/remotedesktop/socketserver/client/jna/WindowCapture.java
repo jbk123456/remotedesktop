@@ -1,25 +1,16 @@
 package com.github.remotedesktop.socketserver.client.jna;
 
-import java.awt.AWTException;
 import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-
-import javax.imageio.ImageIO;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
-import com.sun.jna.Structure.ByValue;
 import com.sun.jna.platform.DesktopWindow;
 import com.sun.jna.platform.win32.GDI32;
 import com.sun.jna.platform.win32.User32;
@@ -29,13 +20,10 @@ import com.sun.jna.platform.win32.WinDef.DWORD;
 import com.sun.jna.platform.win32.WinDef.HBITMAP;
 import com.sun.jna.platform.win32.WinDef.HDC;
 import com.sun.jna.platform.win32.WinDef.HWND;
-import com.sun.jna.platform.win32.WinDef.LPARAM;
 import com.sun.jna.platform.win32.WinDef.RECT;
-import com.sun.jna.platform.win32.WinDef.WPARAM;
 import com.sun.jna.platform.win32.WinGDI;
 import com.sun.jna.platform.win32.WinGDI.BITMAPINFO;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
-import com.sun.jna.platform.win32.WinUser;
 import com.sun.jna.platform.win32.WinUser.WNDENUMPROC;
 import com.sun.jna.win32.W32APIOptions;
 
@@ -51,7 +39,29 @@ public class WindowCapture {
 			User32.INSTANCE.GetWindowRect(hWnd, r);
 			width = r.right - r.left;
 			height = r.bottom - r.top;
+			keepScreenOn();
 		}
+
+	}
+
+	private void keepScreenOn() {
+		Runnable keepScreenOn = new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+					while (true) {
+						Thread.sleep(30000);
+						Kernel32.INSTANCE.SetThreadExecutionState(0x80000000 | 0x80000001 | 0x80000002 | 0x00000004);
+					}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		};
+		Thread t = new Thread(keepScreenOn);
+		t.setDaemon(true);
+		t.start();
 	}
 
 	public BufferedImage getImage() {
@@ -68,7 +78,6 @@ public class WindowCapture {
 			t.printStackTrace();
 			// capure windows individually
 		}
-		Kernel32.INSTANCE.SetThreadExecutionState(0x80000000 | 0x80000001 | 0x80000002 | 0x00000004);
 		List<DesktopWindow> list = getAllWindows();
 		Collections.reverse(list);
 		BufferedImage im = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
