@@ -51,8 +51,8 @@ public class WindowCapture {
 			public void run() {
 				try {
 					while (true) {
-						Thread.sleep(30000);
-						Kernel32.INSTANCE.SetThreadExecutionState(0x80000000 | 0x80000001 | 0x80000002 | 0x00000004);
+						Thread.sleep(10000);
+						Kernel32.INSTANCE.SetThreadExecutionState(0x80000000 | 0x80000001 | 0x80000002 | 0x00000040);
 					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();
