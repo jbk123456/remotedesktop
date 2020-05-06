@@ -52,10 +52,8 @@ function startMouseButtonListener(callback) {
 
 		stopPropagateEvent(e);
 
-
-		var button = e.button;
 		setTimeout(function() {
-			callback('press', button);
+			callback('press', e.which);
 		}, 1);
 
 
@@ -65,10 +63,8 @@ function startMouseButtonListener(callback) {
 
 		stopPropagateEvent(e);
 
-		var button = e.button;
-
 		setTimeout(function() {
-			callback('release', button);
+			callback('release', e.which);
 		}, 1);
 
 		return true;
