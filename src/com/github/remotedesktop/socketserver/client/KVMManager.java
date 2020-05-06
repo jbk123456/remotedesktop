@@ -43,23 +43,23 @@ public class KVMManager {
 		keymap.put(new Integer(173), new Integer(KeyEvent.VK_MINUS)); // -
 
 		keymap.put(new Integer(27), new Integer(KeyEvent.VK_ESCAPE)); // Esc
-		keymap.put(new Integer(192), new Integer(KeyEvent.VK_BACK_QUOTE)); // `
+//		keymap.put(new Integer(192), new Integer(KeyEvent.VK_BACK_QUOTE)); // `
 		keymap.put(new Integer(49), new Integer(KeyEvent.VK_1)); // 1
 		keymap.put(new Integer(50), new Integer(KeyEvent.VK_2)); // 2
 		keymap.put(new Integer(51), new Integer(KeyEvent.VK_3)); // 3
 		keymap.put(new Integer(52), new Integer(KeyEvent.VK_4)); // 4
 		keymap.put(new Integer(53), new Integer(KeyEvent.VK_5)); // 5
 		keymap.put(new Integer(54), new Integer(KeyEvent.VK_6)); // 6
-		keymap.put(new Integer(55), new Integer(KeyEvent.VK_7)); // 7
-		keymap.put(new Integer(56), new Integer(KeyEvent.VK_8)); // 8
-		keymap.put(new Integer(57), new Integer(KeyEvent.VK_9)); // 9
-		keymap.put(new Integer(48), new Integer(KeyEvent.VK_0)); // 0
+//		keymap.put(new Integer(55), new Integer(KeyEvent.VK_7)); // 7
+//		keymap.put(new Integer(56), new Integer(KeyEvent.VK_8)); // 8
+//		keymap.put(new Integer(57), new Integer(KeyEvent.VK_9)); // 9
+//		keymap.put(new Integer(48), new Integer(KeyEvent.VK_0)); // 0
 		keymap.put(new Integer(189), new Integer(KeyEvent.VK_MINUS)); // -
 		keymap.put(new Integer(187), new Integer(KeyEvent.VK_EQUALS)); // =
 		keymap.put(new Integer(8), new Integer(KeyEvent.VK_BACK_SPACE)); // Backspace
 
 		keymap.put(new Integer(9), new Integer(KeyEvent.VK_TAB)); // Tab
-		keymap.put(new Integer(81), new Integer(KeyEvent.VK_Q)); // Q
+//		keymap.put(new Integer(81), new Integer(KeyEvent.VK_Q)); // Q
 		keymap.put(new Integer(87), new Integer(KeyEvent.VK_W)); // W
 		keymap.put(new Integer(69), new Integer(KeyEvent.VK_E)); // E
 		keymap.put(new Integer(82), new Integer(KeyEvent.VK_R)); // R
@@ -69,9 +69,9 @@ public class KVMManager {
 		keymap.put(new Integer(73), new Integer(KeyEvent.VK_I)); // I
 		keymap.put(new Integer(79), new Integer(KeyEvent.VK_O)); // O
 		keymap.put(new Integer(80), new Integer(KeyEvent.VK_P)); // P
-		keymap.put(new Integer(219), new Integer(KeyEvent.VK_OPEN_BRACKET)); // [
-		keymap.put(new Integer(221), new Integer(KeyEvent.VK_CLOSE_BRACKET)); // ]
-		keymap.put(new Integer(220), new Integer(KeyEvent.VK_BACK_SLASH)); // \
+//		keymap.put(new Integer(219), new Integer(KeyEvent.VK_OPEN_BRACKET)); // [
+//		keymap.put(new Integer(221), new Integer(KeyEvent.VK_CLOSE_BRACKET)); // ]
+//		keymap.put(new Integer(220), new Integer(KeyEvent.VK_BACK_SLASH)); // \
 		keymap.put(new Integer(65), new Integer(KeyEvent.VK_A)); // A
 		keymap.put(new Integer(83), new Integer(KeyEvent.VK_S)); // S
 		keymap.put(new Integer(68), new Integer(KeyEvent.VK_D)); // D
@@ -92,7 +92,7 @@ public class KVMManager {
 		keymap.put(new Integer(78), new Integer(KeyEvent.VK_N)); // N
 		keymap.put(new Integer(77), new Integer(KeyEvent.VK_M)); // M
 		keymap.put(new Integer(188), new Integer(KeyEvent.VK_COMMA)); // ,
-		keymap.put(new Integer(190), new Integer(KeyEvent.VK_DECIMAL)); // .
+//		keymap.put(new Integer(190), new Integer(KeyEvent.VK_DECIMAL)); // .
 		keymap.put(new Integer(191), new Integer(KeyEvent.VK_SLASH)); // /
 		keymap.put(new Integer(32), new Integer(KeyEvent.VK_SPACE)); // Space
 		keymap.put(new Integer(112), new Integer(KeyEvent.VK_F1)); // F1
@@ -110,17 +110,7 @@ public class KVMManager {
 		keymap.put(new Integer(111), new Integer(KeyEvent.VK_SLASH)); // /
 		keymap.put(new Integer(42), new Integer(KeyEvent.VK_ASTERISK)); // *
 		keymap.put(new Integer(45), new Integer(KeyEvent.VK_MINUS)); // -
-		keymap.put(new Integer(0), new Integer(KeyEvent.VK_7)); // 7
-		keymap.put(new Integer(0), new Integer(KeyEvent.VK_8)); // 8
-		keymap.put(new Integer(0), new Integer(KeyEvent.VK_9)); // 9
 		keymap.put(new Integer(43), new Integer(KeyEvent.VK_PLUS)); // +
-		keymap.put(new Integer(0), new Integer(KeyEvent.VK_4)); // 4
-		keymap.put(new Integer(0), new Integer(KeyEvent.VK_5)); // 5
-		keymap.put(new Integer(0), new Integer(KeyEvent.VK_6)); // 6
-		keymap.put(new Integer(0), new Integer(KeyEvent.VK_1)); // 1
-		keymap.put(new Integer(0), new Integer(KeyEvent.VK_2)); // 2
-		keymap.put(new Integer(0), new Integer(KeyEvent.VK_3)); // 3
-		keymap.put(new Integer(0), new Integer(KeyEvent.VK_0)); // 0
 		keymap.put(new Integer(46), new Integer(KeyEvent.VK_DELETE)); // Del
 		keymap.put(new Integer(13), new Integer(KeyEvent.VK_ENTER)); // Enter
 		keymap.put(new Integer(36), new Integer(KeyEvent.VK_HOME)); // Home
@@ -145,6 +135,10 @@ public class KVMManager {
 	}
 
 	public void keyStroke(int key, int keycode, int mask) {
+		if (keycode==0) {
+			return; // ignore composite keys. We might use e.code, but that would be difficult
+		}
+	
 		int scancode = convAscii(keycode);
 		System.out.println("keycode:::" + keycode + " " + scancode + " " + ((char)key));
 		if (scancode < 0) {
@@ -152,6 +146,7 @@ public class KVMManager {
 				return;
 			}
 			askiiKeyStrokeViaAltNumpad(key, mask);
+			return;
 		}
 		if ((mask & 1) == 1) {
 			robot.keyPress(KeyEvent.VK_SHIFT);
@@ -179,9 +174,17 @@ public class KVMManager {
 			robot.keyRelease(KeyEvent.VK_CONTROL);
 		}
 	}
+	public static final char[] EXTENDED = { 0xFF,0xAD,0x9B,0x9C,0x00,0x9D,0x00,0x00,0x00,0x00,0xA6,0xAE,0xAA,0x00,0x00,0x00,0xF8,0xF1,0xFD,0x00,0x00,0xE6,0x00,0xFA,0x00,0x00,0xA7,0xAF,0xAC,0xAB,0x00,0xA8,0x00,0x00,0x00,0x00,0x8E,0x8F,0x92,0x80,0x00,0x90,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xA5,0x00,0x00,0x00,0x00,0x99,0x00,0x00,0x00,0x00,0x00,0x9A,0x00,0x00,0xE1,0x85,0xA0,0x83,0x00,0x84,0x86,0x91,0x87,0x8A,0x82,0x88,0x89,0x8D,0xA1,0x8C,0x8B,0x00,0xA4,0x95,0xA2,0x93,0x00,0x94,0xF6,0x00,0x97,0xA3,0x96,0x81,0x00,0x00,0x98};
+
 
 	private void askiiKeyStrokeViaAltNumpad(int key, int mask) {
-		robot.keyPress(KeyEvent.VK_ALT);
+		
+        if (key >= 0xA0 && key <= 0xFF && EXTENDED[key-0xA0]>0) {
+            key =  EXTENDED[key - 0xA0];
+        }
+		
+
+        robot.keyPress(KeyEvent.VK_ALT);
 		String charcode = Integer.toString(key);
 		for (char ascii_c : charcode.toCharArray()) {
 			int ascii_n = Integer.parseInt(String.valueOf(ascii_c)) + 96;
@@ -229,7 +232,4 @@ public class KVMManager {
 		}
 		return robot.createScreenCapture(screenbound);
 	}
-
-
-
 }

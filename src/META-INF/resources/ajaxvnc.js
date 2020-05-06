@@ -4,7 +4,6 @@ var px;
 var py;
 var serverSocket;
 
-
 function stopPropagateEvent(e) {
 	e.cancelBubble = true;
 	e.returnValue = false;
@@ -17,226 +16,64 @@ function stopPropagateEvent(e) {
 }
 
 function startKeyListener(callback) {
-	document.addEventListener('keydown', function(e) {
+	document.body.addEventListener('keydown', function(e) {
 		    var mask = e.shiftKey?1:0 | e.ctrlKey?2:0 | e.altKey?4:0; 
-			setTimeout(function() {callback(e.key, e.keyCode, mask);}, 1);
+		    //console.log("KEY:::", e.keyCode, e.key, e.code );
 			stopPropagateEvent(e);
+			setTimeout(function() {callback(e.key, e.keyCode, mask);}, 1);
+
+			return true;
 		});
 }
 
 function startVisibilityListener(callback) {
-	//document.addEventListener("visibilitychange", callback);
 	  document.addEventListener("visibilitychange", callback, false);
 }
 
-function startMouseMoveListener(callback, opt) {
-	// Provide a set of default options
-	var default_options = {
-		'type' : 'mousemove',
-		'propagate' : false,
-		'target' : document
-	}
-	if (!opt)
-		opt = default_options;
-	else {
-		for ( var dfo in default_options) {
-			if (typeof opt[dfo] == 'undefined')
-				opt[dfo] = default_options[dfo];
-		}
-	}
+function startMouseMoveListener(callback) {
+	
+	document.body.addEventListener("mousemove",  e => {
 
-	var ele = opt.target
-	if (typeof opt.target == 'string')
-		ele = document.getElementById(opt.target);
-	var ths = this;
+		stopPropagateEvent(e);
+		
+		var x = document.body.scrollLeft + e.clientX;
+		var y = document.body.scrollTop + e.clientY;
 
-	// The function to be called at mouse move
-	var func = function(e) {
-		e = e || window.event;
-		x = 0;
-		y = 0;
-		// Find mouse position
-		if (e.pageX)
-			x = e.pageX;
-		if (e.clientX)
-			x = document.body.scrollLeft + e.clientX;
-		if (e.pageY)
-			y = e.pageY;
-		if (e.clientY)
-			y = document.body.scrollTop + e.clientY;
 		setTimeout(function() {
 			callback(x, y);
 		}, 1);
-
-		// e.cancelBubble is supported by IE - this will kill the bubbling
-		// process.
-		e.cancelBubble = true;
-		e.returnValue = false;
-
-		// e.stopPropagation works only in Firefox.
-		if (e.stopPropagation) {
-			e.stopPropagation();
-			e.preventDefault();
-		}
-		return false;
-	}
-
-	// Attach the function with the event
-	if (ele.addEventListener)
-		ele.addEventListener(opt['type'], func, false);
-	else if (ele.attachEvent)
-		ele.attachEvent('on' + opt['type'], func);
-	else
-		ele['on' + opt['type']] = func;
+		
+      return true;
+	});
 }
 
-function startMouseButtonListener(callback, opt) {
-	// Provide a set of default options
-	var default_options = {
-		'type' : 'mousedown',
-		'type2' : 'mouseup',
-		'propagate' : false,
-		'target' : document
-	}
-	if (!opt)
-		opt = default_options;
-	else {
-		for ( var dfo in default_options) {
-			if (typeof opt[dfo] == 'undefined')
-				opt[dfo] = default_options[dfo];
-		}
-	}
+function startMouseButtonListener(callback) {
+	document.body.addEventListener("mousedown", e=> {
 
-	var ele = opt.target
-	if (typeof opt.target == 'string')
-		ele = document.getElementById(opt.target);
-	var ths = this;
+		stopPropagateEvent(e);
 
-	// The function to be called at mouse button press
-	var func = function(e) {
-		e = e || window.event;
-		button = 0;
 
-		// Find mouse button
-		if (e.which)
-			button = e.which;
-		if (e.button)
-			button = e.button;
+		var button = e.button;
 		setTimeout(function() {
 			callback('press', button);
 		}, 1);
 
-		// e.cancelBubble is supported by IE - this will kill the bubbling
-		// process.
-		e.cancelBubble = true;
-		e.returnValue = false;
 
-		// e.stopPropagation works only in Firefox.
-		if (e.stopPropagation) {
-			e.stopPropagation();
-			e.preventDefault();
-		}
-		return false;
-	}
+		return true;
+	});
+	document.body.addEventListener("mouseup", e=> {
 
-	// The function to be called at mouse button release
-	var func2 = function(e) {
-		e = e || window.event;
-		button = 0;
-		// Find mouse button
-		if (e.which)
-			button = e.which;
-		if (e.button)
-			button = e.button;
+		stopPropagateEvent(e);
+
+		var button = e.button;
+
 		setTimeout(function() {
 			callback('release', button);
 		}, 1);
 
-		// e.cancelBubble is supported by IE - this will kill the bubbling
-		// process.
-		e.cancelBubble = true;
-		e.returnValue = false;
+		return true;
+	});
 
-		// e.stopPropagation works only in Firefox.
-		if (e.stopPropagation) {
-			e.stopPropagation();
-			e.preventDefault();
-		}
-		return false;
-	}
-
-	// Attach the function with the mouse down
-	if (ele.addEventListener)
-		ele.addEventListener(opt['type'], func, false);
-	else if (ele.attachEvent)
-		ele.attachEvent('on' + opt['type'], func);
-	else
-		ele['on' + opt['type']] = func;
-	// Attach the function with the mouse up
-	if (ele.addEventListener)
-		ele.addEventListener(opt['type2'], func2, false);
-	else if (ele.attachEvent)
-		ele.attachEvent('on' + opt['type2'], func2);
-	else
-		ele['on' + opt['type2']] = func2;
-
-}
-
-function startWindowResizeListener(callback, opt) {
-	// Provide a set of default options
-	var default_options = {
-		'type' : 'resize',
-		'propagate' : false,
-		'target' : window
-	}
-	if (!opt)
-		opt = default_options;
-	else {
-		for ( var dfo in default_options) {
-			if (typeof opt[dfo] == 'undefined')
-				opt[dfo] = default_options[dfo];
-		}
-	}
-
-	var ele = opt.target
-	if (typeof opt.target == 'string')
-		ele = document.getElementById(opt.target);
-	var ths = this;
-
-	// The function to be called at mouse move
-	var func = function(e) {
-		e = e || window.event;
-		x = 0;
-		y = 0;
-		// Find window size
-		if (e.x)
-			x = e.x;
-		if (e.y)
-			y = e.y;
-		setTimeout(function() {
-			callback(x, y);
-		}, 1);
-
-		// e.cancelBubble is supported by IE - this will kill the bubbling
-		// process.
-		e.cancelBubble = true;
-		e.returnValue = false;
-
-		// e.stopPropagation works only in Firefox.
-		if (e.stopPropagation) {
-			e.stopPropagation();
-			e.preventDefault();
-		}
-		return false;
-	}
-
-	// Attach the function with the event
-	if (ele.addEventListener)
-		ele.addEventListener(opt['type'], func, false);
-	else if (ele.attachEvent)
-		ele.attachEvent('on' + opt['type'], func);
-	else
-		ele['on' + opt['type']] = func;
 }
 
 function sendCtrl(url) {
@@ -292,15 +129,16 @@ function visibilityListener(ev) {
 		console.log("open socket");
 		connectToServer();
     }
+    return true;
 }
 
 
 function keyHandler(key, code, mask) {
 	sendCtrl("sendKey?key=" + key.charCodeAt(0) +"&code=" + code + "&mask=" + mask+ "&c=" + Math.random());
+    return true;
 }
 
 function mousemoveHandler(x, y) {
-
 	mouseX = x;
 	mouseY = y;
 }
