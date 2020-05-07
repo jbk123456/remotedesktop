@@ -48,10 +48,12 @@ function startMouseMoveListener(callback) {
 }
 
 function startMouseButtonListener(callback) {
-	var buttons = e.buttons;
+	var buttons = 0;
 
 	document.body.addEventListener("mousedown", e=> {
-
+		
+		buttons = e.buttons;
+		
 		stopPropagateEvent(e);
 
 		setTimeout(function() {
