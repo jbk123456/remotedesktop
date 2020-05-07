@@ -55,7 +55,11 @@ function startMouseButtonListener(callback) {
 		stopPropagateEvent(e);
 
 		setTimeout(function() {
+<<<<<<< HEAD
 			callback('press', buttons);
+=======
+			callback('press', e.which);
+>>>>>>> branch 'master' of https://github.com/jbk123456/remotedesktop.git
 		}, 1);
 
 
@@ -66,7 +70,11 @@ function startMouseButtonListener(callback) {
 		stopPropagateEvent(e);
 
 		setTimeout(function() {
+<<<<<<< HEAD
 			callback('release', buttons);
+=======
+			callback('release', e.which);
+>>>>>>> branch 'master' of https://github.com/jbk123456/remotedesktop.git
 		}, 1);
 
 		return true;
