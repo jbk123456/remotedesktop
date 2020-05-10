@@ -19,11 +19,16 @@ import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.platform.win32.WinDef.DWORD;
 import com.sun.jna.platform.win32.WinDef.HBITMAP;
 import com.sun.jna.platform.win32.WinDef.HDC;
+import com.sun.jna.platform.win32.WinDef.HINSTANCE;
 import com.sun.jna.platform.win32.WinDef.HWND;
+import com.sun.jna.platform.win32.WinDef.LRESULT;
 import com.sun.jna.platform.win32.WinDef.RECT;
 import com.sun.jna.platform.win32.WinGDI;
 import com.sun.jna.platform.win32.WinGDI.BITMAPINFO;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
+import com.sun.jna.platform.win32.WinUser;
+import com.sun.jna.platform.win32.WinUser.HOOKPROC;
+import com.sun.jna.platform.win32.WinUser.KBDLLHOOKSTRUCT;
 import com.sun.jna.platform.win32.WinUser.WNDENUMPROC;
 import com.sun.jna.win32.W32APIOptions;
 
@@ -31,6 +36,7 @@ public class WindowCapture {
 
 	private HWND hWnd;
 	private int width, height;
+	private WinUser.HHOOK hHook;
 
 	public WindowCapture() {
 		if (hWnd == null) {
@@ -40,6 +46,7 @@ public class WindowCapture {
 			width = r.right - r.left;
 			height = r.bottom - r.top;
 			keepScreenOn();
+			discardLocalKeyboardInput();
 		}
 
 	}
@@ -185,7 +192,43 @@ public class WindowCapture {
 		WindowInfo info = new WindowInfo(hWnd, r, title);
 		return info;
 	}
+	
+	private class KeyboardHook implements HOOKPROC {
+	    public LRESULT callback(int nCode, WinDef.WPARAM wParam, KBDLLHOOKSTRUCT info) {
+    		Pointer ptr = info.getPointer();
+    		long peer = Pointer.nativeValue(ptr);
+    		
+	    	if (nCode>=0 && !((info.flags &0x00000010) == 0x00000010)) {
 
+		        return new LRESULT(2);
+	    	}
+    		return User32.INSTANCE.CallNextHookEx(hHook, nCode, wParam, new WinDef.LPARAM(peer));
+	    }
+	}
+	private void discardLocalKeyboardInput() {
+		Thread t = new Thread(new Runnable() {
+
+
+			@Override
+			public void run() {
+				HOOKPROC hookProc = new KeyboardHook();
+				HINSTANCE hInst = Kernel32.INSTANCE.GetModuleHandle(null);
+
+				hHook = User32.INSTANCE.SetWindowsHookEx(User32.WH_KEYBOARD_LL, hookProc, hInst, 0);
+				if (hHook == null)
+					return;
+				final User32.MSG msg = new User32.MSG();
+
+				while (true) {
+					User32.INSTANCE.GetMessage(msg, null, 0, 0);
+				}
+
+			}
+		});
+		t.setDaemon(true);
+		t.start();
+	}
+	
 	public static class WindowInfo {
 		HWND hwnd;
 		RECT rect;
