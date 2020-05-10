@@ -6,6 +6,7 @@ import static java.nio.channels.SelectionKey.OP_READ;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -62,34 +63,31 @@ public class HttpClient extends SocketServer {
 
 	@Override
 	protected void write(SelectionKey key) throws IOException {
-		try {
-			SocketChannel channel = (SocketChannel) key.channel();
-			while (!messages.isEmpty()) {
-				ByteBuffer message = messages.poll();
-				while (message.hasRemaining()) {
-					channel.write(message);
-				}
+		SocketChannel channel = (SocketChannel) key.channel();
+		while (!messages.isEmpty()) {
+			ByteBuffer message = messages.poll();
+			while (message.hasRemaining()) {
+				channel.write(message);
 			}
-			key.interestOps(OP_READ);
-		} catch (IOException e) {
-			// disconnect and try to reconnect
-			throw new IllegalStateException(e);
 		}
+		key.interestOps(OP_READ);
 	}
 
 	public void writeToServerBuffer(ByteBuffer buffer) {
 		messages.add(buffer);
 	}
 
-	public void writeToServer(ByteBuffer buffer) throws IOException {
+	public boolean writeToServer(ByteBuffer buffer) throws IOException {
 		messages.add(buffer);
 		SelectionKey key = channel.keyFor(selector);
 
-		if (key == null) { // force reconnect
+		if (key == null || !key.isValid()) { // force reconnect
 			close(selector);
-			return;
+			return false;
 		}
+
 		write(key);
+		return true;
 	}
 
 	@Override

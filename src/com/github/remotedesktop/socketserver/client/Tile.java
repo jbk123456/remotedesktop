@@ -105,6 +105,10 @@ public class Tile {
 		dirty = false;
 	}
 
+	public void setDirty() {
+		dirty = true;
+	}
+
 	private void calcChecksum2(BufferedImage image) {
 		int w = image.getWidth();
 		int h = image.getHeight();

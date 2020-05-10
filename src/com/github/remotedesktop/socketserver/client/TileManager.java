@@ -64,4 +64,11 @@ public class TileManager {
 		return numytile;
 	}
 
+	public void setDirty() {
+		for (int i = 0; i < numxtile; i++) {
+			for (int j = 0; j < numytile; j++) {
+				tiles[i][j].setDirty();
+			}
+		}
+	}
 }

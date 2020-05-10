@@ -54,12 +54,15 @@ public class DisplayServer extends HttpClient implements HttpClient.ResponseHand
 		StringBuilder b = new StringBuilder("GET /tiledoc");
 		b.append("\r\n\r\n");
 		byte[] req = b.toString().getBytes();
-
+		
+		boolean written = false;
 		try {
-//			System.out.println("displayserver: update tile called");;
-			writeToServer(ByteBuffer.wrap(req));
-		} catch (IOException e) {
-			e.printStackTrace();
+			written = writeToServer(ByteBuffer.wrap(req));
+		} catch (Exception e) {
+			written = false;
+		}
+		if (!written) {
+			tileman.setDirty();
 		}
 	}
 

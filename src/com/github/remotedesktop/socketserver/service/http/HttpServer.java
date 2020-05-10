@@ -185,7 +185,11 @@ public class HttpServer extends SocketServer {
 
 			case "/": {
 				res.redirect("/remotedesktop.html");
-				writeTo(key, ByteBuffer.wrap(res.getResponse()));
+				try {
+					writeTo(key, ByteBuffer.wrap(res.getResponse()));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 				break;
 			}
 			case "/sendKey": {
