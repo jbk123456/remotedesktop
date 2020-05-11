@@ -4,6 +4,7 @@ import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,7 +12,9 @@ import java.util.List;
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
+import com.sun.jna.Structure;
 import com.sun.jna.platform.DesktopWindow;
+import com.sun.jna.platform.win32.BaseTSD;
 import com.sun.jna.platform.win32.GDI32;
 import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.Win32Exception;
@@ -22,13 +25,14 @@ import com.sun.jna.platform.win32.WinDef.HDC;
 import com.sun.jna.platform.win32.WinDef.HINSTANCE;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.platform.win32.WinDef.LRESULT;
+import com.sun.jna.platform.win32.WinDef.POINT;
 import com.sun.jna.platform.win32.WinDef.RECT;
 import com.sun.jna.platform.win32.WinGDI;
 import com.sun.jna.platform.win32.WinGDI.BITMAPINFO;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.platform.win32.WinUser;
+import com.sun.jna.platform.win32.WinUser.HHOOK;
 import com.sun.jna.platform.win32.WinUser.HOOKPROC;
-import com.sun.jna.platform.win32.WinUser.KBDLLHOOKSTRUCT;
 import com.sun.jna.platform.win32.WinUser.WNDENUMPROC;
 import com.sun.jna.win32.W32APIOptions;
 
@@ -36,7 +40,6 @@ public class WindowCapture {
 
 	private HWND hWnd;
 	private int width, height;
-	private WinUser.HHOOK hHook;
 
 	public WindowCapture() {
 		if (hWnd == null) {
@@ -46,7 +49,7 @@ public class WindowCapture {
 			width = r.right - r.left;
 			height = r.bottom - r.top;
 			keepScreenOn();
-			discardLocalKeyboardInput();
+			discardLocalInput();
 		}
 
 	}
@@ -192,31 +195,39 @@ public class WindowCapture {
 		WindowInfo info = new WindowInfo(hWnd, r, title);
 		return info;
 	}
-	
-	private class KeyboardHook implements HOOKPROC {
-	    public LRESULT callback(int nCode, WinDef.WPARAM wParam, KBDLLHOOKSTRUCT info) {
-    		Pointer ptr = info.getPointer();
-    		long peer = Pointer.nativeValue(ptr);
-    		
-	    	if (nCode>=0 && !((info.flags &0x00000010) == 0x00000010)) {
 
-		        return new LRESULT(2);
-	    	}
-    		return User32.INSTANCE.CallNextHookEx(hHook, nCode, wParam, new WinDef.LPARAM(peer));
-	    }
-	}
-	private void discardLocalKeyboardInput() {
+	private void discardLocalInput() {
+		final ThreadLocal<HHOOK> keyboardHook = new ThreadLocal<>(), mouseHook = new ThreadLocal<>();
 		Thread t = new Thread(new Runnable() {
-
-
 			@Override
 			public void run() {
-				HOOKPROC hookProc = new KeyboardHook();
-				HINSTANCE hInst = Kernel32.INSTANCE.GetModuleHandle(null);
+				final HOOKPROC keyboardHookProc = new HOOKPROC() {
+					@SuppressWarnings("unused")
+					public LRESULT callback(int nCode, WinDef.WPARAM wParam, WinUser.KBDLLHOOKSTRUCT info) {
+						if (nCode >= 0 && !((info.flags & 0x10) == 0x10)) {
+							return new LRESULT(2);
+						}
+						return User32.INSTANCE.CallNextHookEx(keyboardHook.get(), nCode, wParam,
+								new WinDef.LPARAM(Pointer.nativeValue(info.getPointer())));
+					}
+				};
 
-				hHook = User32.INSTANCE.SetWindowsHookEx(User32.WH_KEYBOARD_LL, hookProc, hInst, 0);
-				if (hHook == null)
-					return;
+				final HOOKPROC mouseHookProc = new HOOKPROC() {
+					@SuppressWarnings("unused")
+					public LRESULT callback(int nCode, WinDef.WPARAM wParam, MSLLHOOKSTRUCT info) {
+						if (nCode >= 0 && !((info.flags.intValue() & 1) == 1)) {
+							return new LRESULT(2);
+						}
+						return User32.INSTANCE.CallNextHookEx(mouseHook.get(), nCode, wParam,
+								new WinDef.LPARAM(Pointer.nativeValue(info.getPointer())));
+					}
+				};
+				
+				final HINSTANCE hInst = Kernel32.INSTANCE.GetModuleHandle(null);
+
+				keyboardHook.set(User32.INSTANCE.SetWindowsHookEx(User32.WH_KEYBOARD_LL, keyboardHookProc, hInst, 0));
+				mouseHook.set(User32.INSTANCE.SetWindowsHookEx(User32.WH_MOUSE_LL, mouseHookProc, hInst, 0));
+				
 				final User32.MSG msg = new User32.MSG();
 
 				while (true) {
@@ -228,7 +239,7 @@ public class WindowCapture {
 		t.setDaemon(true);
 		t.start();
 	}
-	
+
 	public static class WindowInfo {
 		HWND hwnd;
 		RECT rect;
@@ -273,5 +284,22 @@ public class WindowCapture {
 
 		public DWORD SRCCOPY = new DWORD(0x00CC0020);
 
+	}
+
+	public static class MSLLHOOKSTRUCT extends Structure {
+
+		@Override
+		protected List<String> getFieldOrder() {
+			return Arrays.asList(new String[] { "pt", "mouseData", "flags", "time", "dwExtraInfo" });
+		}
+
+		public static class ByReference extends MSLLHOOKSTRUCT implements Structure.ByReference {
+		}
+
+		public POINT pt;
+		public DWORD mouseData;
+		public DWORD flags;
+		public DWORD time;
+		public BaseTSD.ULONG_PTR dwExtraInfo;
 	}
 }
