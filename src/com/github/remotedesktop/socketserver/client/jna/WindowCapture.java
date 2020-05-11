@@ -42,16 +42,13 @@ public class WindowCapture {
 	private int width, height;
 
 	public WindowCapture() {
-		if (hWnd == null) {
-			hWnd = User32.INSTANCE.GetDesktopWindow();
-			RECT r = new RECT();
-			User32.INSTANCE.GetWindowRect(hWnd, r);
-			width = r.right - r.left;
-			height = r.bottom - r.top;
-			keepScreenOn();
-			discardLocalInput();
-		}
-
+		hWnd = User32Extra.INSTANCE.GetDesktopWindow();
+		RECT r = new RECT();
+		User32.INSTANCE.GetWindowRect(hWnd, r);
+		width = r.right - r.left;
+		height = r.bottom - r.top;
+		keepScreenOn();
+		discardLocalInput();
 	}
 
 	private void keepScreenOn() {
@@ -76,7 +73,7 @@ public class WindowCapture {
 
 	public BufferedImage getImage() {
 		try {
-			HWND hWnd = User32.INSTANCE.GetDesktopWindow();
+			HWND hWnd = User32Extra.INSTANCE.GetDesktopWindow();
 			RECT r = new RECT();
 			User32.INSTANCE.GetWindowRect(hWnd, r);
 			int width = r.right - r.left;
@@ -197,10 +194,10 @@ public class WindowCapture {
 	}
 
 	private void discardLocalInput() {
-		final ThreadLocal<HHOOK> keyboardHook = new ThreadLocal<>(), mouseHook = new ThreadLocal<>();
 		Thread t = new Thread(new Runnable() {
 			@Override
 			public void run() {
+				final ThreadLocal<HHOOK> keyboardHook = new ThreadLocal<>(), mouseHook = new ThreadLocal<>();
 				final HOOKPROC keyboardHookProc = new HOOKPROC() {
 					@SuppressWarnings("unused")
 					public LRESULT callback(int nCode, WinDef.WPARAM wParam, WinUser.KBDLLHOOKSTRUCT info) {
@@ -222,12 +219,12 @@ public class WindowCapture {
 								new WinDef.LPARAM(Pointer.nativeValue(info.getPointer())));
 					}
 				};
-				
+
 				final HINSTANCE hInst = Kernel32.INSTANCE.GetModuleHandle(null);
 
 				keyboardHook.set(User32.INSTANCE.SetWindowsHookEx(User32.WH_KEYBOARD_LL, keyboardHookProc, hInst, 0));
 				mouseHook.set(User32.INSTANCE.SetWindowsHookEx(User32.WH_MOUSE_LL, mouseHookProc, hInst, 0));
-				
+
 				final User32.MSG msg = new User32.MSG();
 
 				while (true) {

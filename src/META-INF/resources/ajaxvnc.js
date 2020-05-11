@@ -30,15 +30,15 @@ function startVisibilityListener(callback) {
 	  document.addEventListener("visibilitychange", callback, false);
 }
 
-function startMouseMoveListener(callback) {
+function startMouseMoveListener(canvas, callback) {
 	
-	document.body.addEventListener("mousemove",  e => {
+	canvas.addEventListener("mousemove",  e => {
 
 		stopPropagateEvent(e);
 		
 		var x = document.body.scrollLeft + e.clientX;
 		var y = document.body.scrollTop + e.clientY;
-
+console.log("mouse move" , x, y);
 		setTimeout(function() {
 			callback(x, y);
 		}, 1);
@@ -47,10 +47,11 @@ function startMouseMoveListener(callback) {
 	});
 }
 
-function startMouseButtonListener(callback) {
+function startMouseButtonListener(canvas, callback) {
 	var buttons = 0;
 
-	document.body.addEventListener("mousedown", e=> {
+	canvas.addEventListener("mousedown", e=> {
+		console.log("mouse down" , e);
 		
 		buttons = e.buttons;
 		
@@ -63,7 +64,8 @@ function startMouseButtonListener(callback) {
 
 		return true;
 	});
-	document.body.addEventListener("mouseup", e=> {
+	canvas.addEventListener("mouseup", e=> {
+		console.log("mouse up" , e);
 
 		stopPropagateEvent(e);
 
@@ -90,7 +92,7 @@ function updateMouse() {
 		px = mouseX;
 		py = mouseY;
 	}
-	setTimeout('javascript:updateMouse();', 250);
+	setTimeout('javascript:updateMouse();', REMOTEDESKTOPUPDATEMOUSEDELAY);
 }
 
 function connectToServer() {
@@ -105,13 +107,14 @@ function connectToServer() {
 function load() {
 
 	connectToServer();
+	var canvas = document.getElementById("canvas");
 	startKeyListener(keyHandler);
-	startMouseMoveListener(mousemoveHandler);
-	startMouseButtonListener(mousebuttonHandler);
+	startMouseMoveListener(canvas, mousemoveHandler);
+	startMouseButtonListener(canvas, mousebuttonHandler);
 
 	startVisibilityListener(visibilityListener);
 	
-	setTimeout('javascript:updateMouse();', 250);
+	setTimeout('javascript:updateMouse();', REMOTEDESKTOPUPDATEMOUSEDELAY);
 }
 
 function visibilityListener(ev) {

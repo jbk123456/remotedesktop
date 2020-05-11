@@ -23,6 +23,7 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.github.remotedesktop.Config;
 import com.github.remotedesktop.socketserver.SocketServer;
 import com.github.remotedesktop.socketserver.service.KeyboardAndMouseSerializer;
 import com.github.remotedesktop.socketserver.service.TileSerializer;
@@ -272,6 +273,7 @@ public class HttpServer extends SocketServer {
 				text = text.replaceFirst("<DYNAMICTEXT>", sb.toString());
 				text = text.replaceFirst("<TIMEOUT>", Integer.toString(500));
 				text = text.replaceAll("<REMOTEDESKTOPHOST>", host);
+				text = text.replaceAll("<REMOTEDESKTOPUPDATEMOUSEDELAY>", String.valueOf((int)(1000/Config.fps)));
 				res.message(HTTP_OK, "text/html", text);
 				writeTo(key, ByteBuffer.wrap(res.getResponse()));
 				break;
