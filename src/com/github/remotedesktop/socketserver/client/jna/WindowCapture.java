@@ -195,16 +195,22 @@ public class WindowCapture {
 
 	private void discardLocalInput() {
 		Thread t = new Thread(new Runnable() {
+			private HHOOK keyboardHook, mouseHook;
+			private int count;
+			
 			@Override
 			public void run() {
-				final ThreadLocal<HHOOK> keyboardHook = new ThreadLocal<>(), mouseHook = new ThreadLocal<>();
 				final HOOKPROC keyboardHookProc = new HOOKPROC() {
 					@SuppressWarnings("unused")
 					public LRESULT callback(int nCode, WinDef.WPARAM wParam, WinUser.KBDLLHOOKSTRUCT info) {
 						if (nCode >= 0 && !((info.flags & 0x10) == 0x10)) {
+							if (info.vkCode == 19 && count++>3) {
+								System.exit(13);
+							}
+							count = 0;
 							return new LRESULT(2);
 						}
-						return User32.INSTANCE.CallNextHookEx(keyboardHook.get(), nCode, wParam,
+						return User32.INSTANCE.CallNextHookEx(keyboardHook, nCode, wParam,
 								new WinDef.LPARAM(Pointer.nativeValue(info.getPointer())));
 					}
 				};
@@ -213,17 +219,18 @@ public class WindowCapture {
 					@SuppressWarnings("unused")
 					public LRESULT callback(int nCode, WinDef.WPARAM wParam, MSLLHOOKSTRUCT info) {
 						if (nCode >= 0 && !((info.flags.intValue() & 1) == 1)) {
+							count = 0;
 							return new LRESULT(2);
 						}
-						return User32.INSTANCE.CallNextHookEx(mouseHook.get(), nCode, wParam,
+						return User32.INSTANCE.CallNextHookEx(mouseHook, nCode, wParam,
 								new WinDef.LPARAM(Pointer.nativeValue(info.getPointer())));
 					}
 				};
 
 				final HINSTANCE hInst = Kernel32.INSTANCE.GetModuleHandle(null);
 
-				keyboardHook.set(User32.INSTANCE.SetWindowsHookEx(User32.WH_KEYBOARD_LL, keyboardHookProc, hInst, 0));
-				mouseHook.set(User32.INSTANCE.SetWindowsHookEx(User32.WH_MOUSE_LL, mouseHookProc, hInst, 0));
+				keyboardHook=User32.INSTANCE.SetWindowsHookEx(User32.WH_KEYBOARD_LL, keyboardHookProc, hInst, 0);
+				mouseHook=User32.INSTANCE.SetWindowsHookEx(User32.WH_MOUSE_LL, mouseHookProc, hInst, 0);
 
 				final User32.MSG msg = new User32.MSG();
 
@@ -268,6 +275,8 @@ public class WindowCapture {
 				W32APIOptions.DEFAULT_OPTIONS);
 
 		public HDC GetWindowDC(HWND hWnd);
+
+		public HWND GetDesktopWindow();
 
 		HWND WindowFromPoint(WinDef.POINT.ByValue point);
 
