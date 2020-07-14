@@ -1,6 +1,8 @@
 package com.github.remotedesktop;
 
+import java.awt.HeadlessException;
 import java.io.IOException;
+import java.io.PrintStream;
 
 import com.github.remotedesktop.socketserver.client.DisplayServer;
 import com.github.remotedesktop.socketserver.service.http.HttpServer;
@@ -99,12 +101,22 @@ public class Launcher {
 			System.exit(0);
 		}
 
-		if (Config.start_as_service) {
+		boolean startAsService = Config.start_as_service;
+		if (!startAsService) {
+			try {
+				System.setOut(new PrintStream("remotedesktop_displayserver_log.txt"));
+				System.setErr(new PrintStream("remotedesktop_displayserver_err.txt"));
+				DisplayServer a = new DisplayServer("displayserver", Config.http_server, Config.http_port);
+				a.start();
+			} catch (HeadlessException e) {
+				startAsService = true;
+			}
+		}
+		if (startAsService) {
+			System.setOut(new PrintStream("remotedesktop_httpserver_log.txt"));
+			System.setErr(new PrintStream("remotedesktop_httpserver_err.txt"));
 			HttpServer server = new HttpServer(null, Config.http_port);
 			server.start();
-		} else {
-			DisplayServer a = new DisplayServer("displayserver", Config.http_server, Config.http_port);
-			a.start();
 		}
 
 	}

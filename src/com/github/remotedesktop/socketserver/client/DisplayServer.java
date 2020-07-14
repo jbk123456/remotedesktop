@@ -124,7 +124,4 @@ public class DisplayServer extends HttpClient implements HttpClient.ResponseHand
 
 		}
 	}
-	public void cancelKey(SelectionKey key) {
-	   key.cancel();
-	}
 }

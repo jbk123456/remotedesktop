@@ -174,9 +174,6 @@ public abstract class SocketServer implements Runnable {
 				} catch (IOException e) {
 					e.printStackTrace();
 					cancelKey(key);
-					// Channel is no longer active - clean up and try again
-					// key.cancel();
-					// throw e;
 				}
 			}
 		} catch (Exception e) {
@@ -220,20 +217,11 @@ public abstract class SocketServer implements Runnable {
 		int c = 0;
 
 		do {
-			try {
-				c = channel.read(buffer);
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.err.println("FIXME: Tile loading interrupted for KEY:::" + key.attachment());
-				// c = channel.read(buffer);
-			}
+			c = channel.read(buffer);
 		} while (c > 0);
 
 		if (c == -1) {
-			System.out.println("cancel key for: " + key.attachment());
-			key.cancel();
-			close(key.channel());
-			return;
+			throw new IOException("disconnected");
 		}
 		int count = buffer.position();
 		if (count == 0) {

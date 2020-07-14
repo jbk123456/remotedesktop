@@ -92,7 +92,11 @@ public class HttpClient extends SocketServer {
 
 	@Override
 	protected void cancelKey(SelectionKey key) {
+		  System.out.println("HttpClient: cancel key for: " + key.channel()  + " " +key.attachment());
+
 		key.cancel();
+		close(key.channel());
+		throw new IllegalStateException("lost connection to server: " + key.attachment()); // try again
 	}
 
 }

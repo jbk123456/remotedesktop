@@ -309,6 +309,7 @@ public class HttpServer extends SocketServer {
 			return out.toByteArray();
 	}
 	  public void cancelKey(SelectionKey key) {
+		  System.out.println("HttpServer: cancel key for: " + key.channel()  + " " +key.attachment());
 	      key.cancel();
 	   }
 
