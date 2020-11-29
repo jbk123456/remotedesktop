@@ -37,6 +37,11 @@ import com.sun.jna.platform.win32.WinUser.WNDENUMPROC;
 import com.sun.jna.win32.W32APIOptions;
 
 public class WindowCapture {
+	static final int ES_SYSTEM_REQUIRED = 0x00000001;
+	static final int  ES_DISPLAY_REQUIRED = 0x00000002;
+	static final int  ES_USER_PRESENT = 0x00000004; // Only supported by Windows XP/Windows Server 2003
+	static final int  ES_AWAYMODE_REQUIRED = 0x00000040; // Not supported by Windows XP/Windows Server 2003
+	static final int  ES_CONTINUOUS = 0x80000000;
 
 	private HWND hWnd;
 	private int width, height;
@@ -59,7 +64,7 @@ public class WindowCapture {
 				try {
 					while (true) {
 						Thread.sleep(10000);
-						Kernel32.INSTANCE.SetThreadExecutionState(0x80000000 | 0x80000001 | 0x80000002 | 0x00000040);
+						Kernel32.INSTANCE.SetThreadExecutionState(ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED);
 					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();

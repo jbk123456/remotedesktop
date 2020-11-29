@@ -41,11 +41,15 @@ public class HttpTestClient extends SocketServer {
 
 	@Override
 	protected void handleIncomingData(SelectionKey sender, byte[] data) {
-		handler.onMessage(new String(data));
+		handler.onMessage(data);
 	}
 
 	public void sendMessage(String message) throws IOException {
 		byte[] data = message.getBytes();
+		sendMessage(data);
+	}
+
+	public void sendMessage(byte[] data) throws IOException {
 		SelectionKey key = channel.keyFor(selector);
 		setDataBuffer(key, ByteBuffer.wrap(data));
 		write(key);

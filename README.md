@@ -4,31 +4,25 @@ Remote Desktop Server, Proxy and HTML Viewer written in Java and JavaScript
 ##Building
 
 ```
-$ mkdir bin; (cd src; javac -d ../bin `find . -name "*.java"` && cp -r META-INF ../bin) && (cd bin; jar cfm ../remotedesktop.jar META-INF/MANIFEST.MF .)
-```
-or with docker:
-
-```
-$ docker build -t remotedesktop-httpserver .
+mvn install
 ```
 
-##Testing with docker
+##Running
 
-Run the docker container with:
-
-```
-$ docker run -p6502:6502 remotedesktop-httpserver
-$ java -jar remotedesktop.jar --host 172.17.0.1
-```
-
-Get the IP of the docker container, for example with:
+On a machine accessible to both, the display server and the client, type:
 
 ```
-$ ip a list docker0 | fgrep ine
-# example: 172.17.0.1
+mylinuxserver.mydomain.com$ nohup java -jar remotedesktop.jar --service=true &
 ```
 
-Point your browser to ``http://172.17.0.1:6502``
+Start the capturing process:
+
+```
+mywindowsserver.mydomain.com$ java -jar remotedesktop.jar --host=mylinuxserver.mydomain.com
+```
+
+Point your browser to ``http://mylinuxserver.mydomain.com:6502`` to access the desktop
+on ``mywindowsserver.mydomain.com``.
 
 
 

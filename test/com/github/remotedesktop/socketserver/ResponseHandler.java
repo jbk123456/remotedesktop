@@ -1,5 +1,5 @@
 package com.github.remotedesktop.socketserver;
 
 public interface ResponseHandler {
-	void onMessage(String message);
+	void onMessage(byte[] message);
 }

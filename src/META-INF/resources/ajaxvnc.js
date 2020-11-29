@@ -38,7 +38,7 @@ function startMouseMoveListener(canvas, callback) {
 		
 		var x = document.body.scrollLeft + e.clientX;
 		var y = document.body.scrollTop + e.clientY;
-console.log("mouse move" , x, y);
+
 		setTimeout(function() {
 			callback(x, y);
 		}, 1);
