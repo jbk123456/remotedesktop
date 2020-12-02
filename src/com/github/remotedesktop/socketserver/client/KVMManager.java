@@ -15,11 +15,13 @@ import com.github.remotedesktop.socketserver.client.jna.WindowCapture;
 
 public class KVMManager {
 
+	public static final int TIMEOUT = 30;
 	private Map<Integer, Integer> keymap;
 	private WindowCapture cap;
 	private Robot robot;
 	private Rectangle screenbound;
-	private long t0 = 0;
+	private long lastInputTime = 0;
+	private short count = 0;
 
 	public KVMManager() throws AWTException {
 		robot = new java.awt.Robot();
@@ -176,6 +178,7 @@ public class KVMManager {
 			robot.keyPress(KeyEvent.VK_CONTROL);
 			robot.keyRelease(KeyEvent.VK_CONTROL);
 		}
+		lastInputTime = getTime();
 	}
 
 	public static final char[] EXTENDED = { 0xFF, 0xAD, 0x9B, 0x9C, 0x00, 0x9D, 0x00, 0x00, 0x00, 0x00, 0xA6, 0xAE,
@@ -200,12 +203,13 @@ public class KVMManager {
 		}
 
 		robot.keyRelease(KeyEvent.VK_ALT);
+		lastInputTime = getTime();
 	}
 
 	public void mouseMove(int x, int y) {
-		System.out.println("mouse move:" + x + " " + y);
 		if (x > 0 && y > 0) {
 			robot.mouseMove(x, y);
+			lastInputTime = getTime();
 		}
 	}
 
@@ -217,8 +221,8 @@ public class KVMManager {
 			mask |= InputEvent.BUTTON3_DOWN_MASK;
 		if ((buttons & 4) != 0)
 			mask |= InputEvent.BUTTON2_DOWN_MASK;
-		System.out.println("mouse press:" + mask);
 		robot.mousePress(mask);
+		lastInputTime = getTime();
 	}
 
 	public void mouseRelease(int buttons) {
@@ -229,21 +233,30 @@ public class KVMManager {
 			mask |= InputEvent.BUTTON3_DOWN_MASK;
 		if ((buttons & 4) != 0)
 			mask |= InputEvent.BUTTON2_DOWN_MASK;
-		System.out.println("mouse release:" + mask);
 		robot.mouseRelease(mask);
+		lastInputTime = getTime();
+	}
+
+	long getTime() {
+		return System.currentTimeMillis();
 	}
 
 	public BufferedImage captureScreen() {
-		long t0 = System.currentTimeMillis() / 1000;
-		if (t0 % 2 == 1) {
-			robot.keyPress(KeyEvent.VK_NUM_LOCK); // keep screen on
-		}
-		
+		long t = getTime();
+		long t0 = (t - lastInputTime) / 1000;
+		boolean mustKeepAlive = t0 >= TIMEOUT;
+
 		BufferedImage img = (cap != null) ? cap.getImage() : robot.createScreenCapture(screenbound);
-		
-		if (t0 % 2 == 0) {
-			robot.keyRelease(KeyEvent.VK_NUM_LOCK); // keep screen on
+
+		if (mustKeepAlive) {
+			if (count++ % 2 == 0) {
+				robot.keyPress(KeyEvent.VK_NUM_LOCK); // keep screen on
+			} else {
+				robot.keyRelease(KeyEvent.VK_NUM_LOCK); // keep screen on
+			}
+			lastInputTime = t;
 		}
+
 		return img;
 	}
 }

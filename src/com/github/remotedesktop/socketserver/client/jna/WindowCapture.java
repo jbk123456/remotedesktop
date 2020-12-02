@@ -52,28 +52,7 @@ public class WindowCapture {
 		User32.INSTANCE.GetWindowRect(hWnd, r);
 		width = r.right - r.left;
 		height = r.bottom - r.top;
-		keepScreenOn();
 		discardLocalInput();
-	}
-
-	private void keepScreenOn() {
-		Runnable keepScreenOn = new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-					while (true) {
-						Thread.sleep(10000);
-						Kernel32.INSTANCE.SetThreadExecutionState(ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED);
-					}
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-		};
-		Thread t = new Thread(keepScreenOn);
-		t.setDaemon(true);
-		t.start();
 	}
 
 	public BufferedImage getImage() {
