@@ -18,16 +18,23 @@ public class ScreenScanner implements Runnable {
 	}
 
 	public void run() {
-	   BufferedImage captureScreen = kvmman.captureScreen();
-      tileman.setSize((int)captureScreen.getWidth(), (int)captureScreen.getHeight());
+		BufferedImage captureScreen = kvmman.captureScreen();
+		int width = (int) captureScreen.getWidth();
+		int height = (int) captureScreen.getHeight();
+		tileman.setSize(width, height);
 		while (true) {
 			try {
-
-				tileman.processImage(kvmman.captureScreen(), TileManager.MAX_TILE, TileManager.MAX_TILE);
+				captureScreen = kvmman.captureScreen();
+				if (captureScreen.getHeight() != height || captureScreen.getWidth() != width) {
+					throw new IllegalArgumentException("screen size changed");
+				}
+				tileman.processImage(captureScreen, TileManager.MAX_TILE, TileManager.MAX_TILE);
 				notifyObservers();
 				Thread.sleep((int) (1000 / Config.fps));
 			} catch (Exception e) {
 				e.printStackTrace();
+				tileobs.stop();
+				break;
 			}
 		}
 	}

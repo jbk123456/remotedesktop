@@ -1,23 +1,16 @@
 package com.github.remotedesktop.socketserver.client.jna;
 
-import java.awt.AlphaComposite;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
-import com.sun.jna.platform.DesktopWindow;
 import com.sun.jna.platform.win32.BaseTSD;
 import com.sun.jna.platform.win32.GDI32;
 import com.sun.jna.platform.win32.User32;
-import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.platform.win32.WinDef.DWORD;
 import com.sun.jna.platform.win32.WinDef.HBITMAP;
@@ -33,61 +26,25 @@ import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.platform.win32.WinUser;
 import com.sun.jna.platform.win32.WinUser.HHOOK;
 import com.sun.jna.platform.win32.WinUser.HOOKPROC;
-import com.sun.jna.platform.win32.WinUser.WNDENUMPROC;
 import com.sun.jna.win32.W32APIOptions;
 
 public class WindowCapture {
 	static final int ES_SYSTEM_REQUIRED = 0x00000001;
-	static final int  ES_DISPLAY_REQUIRED = 0x00000002;
-	static final int  ES_USER_PRESENT = 0x00000004; // Only supported by Windows XP/Windows Server 2003
-	static final int  ES_AWAYMODE_REQUIRED = 0x00000040; // Not supported by Windows XP/Windows Server 2003
-	static final int  ES_CONTINUOUS = 0x80000000;
-
-	private HWND hWnd;
-	private int width, height;
+	static final int ES_DISPLAY_REQUIRED = 0x00000002;
+	static final int ES_USER_PRESENT = 0x00000004; // Only supported by Windows XP/Windows Server 2003
+	static final int ES_AWAYMODE_REQUIRED = 0x00000040; // Not supported by Windows XP/Windows Server 2003
+	static final int ES_CONTINUOUS = 0x80000000;
 
 	public WindowCapture() {
-		hWnd = User32Extra.INSTANCE.GetDesktopWindow();
+		HWND hWnd = User32Extra.INSTANCE.GetDesktopWindow();
 		RECT r = new RECT();
 		User32.INSTANCE.GetWindowRect(hWnd, r);
-		width = r.right - r.left;
-		height = r.bottom - r.top;
 		discardLocalInput();
 	}
 
 	public BufferedImage getImage() {
-		try {
-			HWND hWnd = User32Extra.INSTANCE.GetDesktopWindow();
-			RECT r = new RECT();
-			User32.INSTANCE.GetWindowRect(hWnd, r);
-			int width = r.right - r.left;
-			int height = r.bottom - r.top;
-			if (width == this.width && height == this.height) {
-				return getScreenshot(hWnd);
-			}
-		} catch (Throwable t) {
-			t.printStackTrace();
-			// capure windows individually
-		}
-		List<DesktopWindow> list = getAllWindows();
-		Collections.reverse(list);
-		BufferedImage im = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		for (DesktopWindow w : list) {
-			System.out.println("window:::" + w.getTitle() + " " + w.getLocAndSize());
-			Graphics2D g2d = im.createGraphics();
-			g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) 1.0));
-			BufferedImage buff2 = null;
-			try {
-				buff2 = /* GDI32Util. */getScreenshot(w.getHWND());
-			} catch (Exception e) {
-				continue;
-			}
-			g2d.drawImage(buff2, w.getLocAndSize().x, w.getLocAndSize().y, null);
-			g2d.dispose();
-
-		}
-
-		return im;
+		HWND hWnd = User32Extra.INSTANCE.GetDesktopWindow();
+		return getScreenshot(hWnd);
 	}
 
 	private static BufferedImage getScreenshot(HWND hWnd) {
@@ -136,59 +93,18 @@ public class WindowCapture {
 		int SetThreadExecutionState(int state);
 	}
 
-	public List<DesktopWindow> getAllWindows() {
-		final List<DesktopWindow> result = new LinkedList<DesktopWindow>();
-		final WNDENUMPROC lpEnumFunc = new WNDENUMPROC() {
-
-			@Override
-			public boolean callback(final HWND hwnd, Pointer arg1) {
-				try {
-					final boolean visible = User32.INSTANCE.IsWindowVisible(hwnd);
-					if (visible) {
-						WindowInfo info = getWindowInfo(hwnd);
-						Rectangle rec = info.rect.toRectangle();
-						;
-						if (info.rect.left != -32000 && info.rect.top != 32000 && rec.x < width && rec.y < height
-								&& rec.width > 0 && rec.height > 0) {
-
-							result.add(new DesktopWindow(hwnd, info.title, "", rec));
-						}
-					}
-				} catch (final Exception e) {
-					// FIXME properly handle whatever error is raised
-					e.printStackTrace();
-				}
-				return true;
-			}
-		};
-		if (!User32.INSTANCE.EnumWindows(lpEnumFunc, null))
-			throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
-		return result;
-	}
-
-	public static WindowInfo getWindowInfo(HWND hWnd) {
-		RECT r = new RECT();
-		User32.INSTANCE.GetWindowRect(hWnd, r);
-		char[] buffer = new char[1024];
-		User32.INSTANCE.GetWindowText(hWnd, buffer, buffer.length);
-		String title = Native.toString(buffer);
-		// System.out.println("window rect:::" + title + " " + r);
-		WindowInfo info = new WindowInfo(hWnd, r, title);
-		return info;
-	}
-
 	private void discardLocalInput() {
 		Thread t = new Thread(new Runnable() {
 			private HHOOK keyboardHook, mouseHook;
 			private int count;
-			
+
 			@Override
 			public void run() {
 				final HOOKPROC keyboardHookProc = new HOOKPROC() {
 					@SuppressWarnings("unused")
 					public LRESULT callback(int nCode, WinDef.WPARAM wParam, WinUser.KBDLLHOOKSTRUCT info) {
 						if (nCode >= 0 && !((info.flags & 0x10) == 0x10)) {
-							if (info.vkCode == 19 && count++>3) {
+							if (info.vkCode == 19 && count++ > 3) {
 								System.exit(13);
 							}
 							count = 0;
@@ -213,8 +129,8 @@ public class WindowCapture {
 
 				final HINSTANCE hInst = Kernel32.INSTANCE.GetModuleHandle(null);
 
-				keyboardHook=User32.INSTANCE.SetWindowsHookEx(User32.WH_KEYBOARD_LL, keyboardHookProc, hInst, 0);
-				mouseHook=User32.INSTANCE.SetWindowsHookEx(User32.WH_MOUSE_LL, mouseHookProc, hInst, 0);
+				keyboardHook = User32.INSTANCE.SetWindowsHookEx(User32.WH_KEYBOARD_LL, keyboardHookProc, hInst, 0);
+				mouseHook = User32.INSTANCE.SetWindowsHookEx(User32.WH_MOUSE_LL, mouseHookProc, hInst, 0);
 
 				final User32.MSG msg = new User32.MSG();
 

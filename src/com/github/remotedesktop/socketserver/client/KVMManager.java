@@ -19,15 +19,16 @@ public class KVMManager {
 	private Map<Integer, Integer> keymap;
 	private WindowCapture cap;
 	private Robot robot;
-	private Rectangle screenbound;
+//	private Rectangle screenbound;
 	private long lastInputTime = 0;
 	private short count = 0;
-
+	private GraphicsEnvironment ge;
+	private GraphicsDevice gd;
+	
 	public KVMManager() throws AWTException {
 		robot = new java.awt.Robot();
-		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-		GraphicsDevice gd = ge.getDefaultScreenDevice();
-		screenbound = gd.getDefaultConfiguration().getBounds();
+		ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+		gd = ge.getDefaultScreenDevice();
 		keymap = new HashMap<>();
 		assignKeyMap();
 		robot.setAutoWaitForIdle(true);
@@ -145,7 +146,6 @@ public class KVMManager {
 		}
 
 		int scancode = convAscii(keycode);
-		System.out.println("keycode:::" + keycode + " " + scancode + " " + ((char) key));
 		if (scancode < 0) {
 			if (scancode < -1) {
 				return;
@@ -178,7 +178,7 @@ public class KVMManager {
 			robot.keyPress(KeyEvent.VK_CONTROL);
 			robot.keyRelease(KeyEvent.VK_CONTROL);
 		}
-		lastInputTime = getTime();
+		lastInputTime=getTime();
 	}
 
 	public static final char[] EXTENDED = { 0xFF, 0xAD, 0x9B, 0x9C, 0x00, 0x9D, 0x00, 0x00, 0x00, 0x00, 0xA6, 0xAE,
@@ -203,13 +203,13 @@ public class KVMManager {
 		}
 
 		robot.keyRelease(KeyEvent.VK_ALT);
-		lastInputTime = getTime();
+		lastInputTime=getTime();
 	}
 
 	public void mouseMove(int x, int y) {
 		if (x > 0 && y > 0) {
 			robot.mouseMove(x, y);
-			lastInputTime = getTime();
+			lastInputTime=getTime();
 		}
 	}
 
@@ -222,7 +222,7 @@ public class KVMManager {
 		if ((buttons & 4) != 0)
 			mask |= InputEvent.BUTTON2_DOWN_MASK;
 		robot.mousePress(mask);
-		lastInputTime = getTime();
+		lastInputTime=getTime();
 	}
 
 	public void mouseRelease(int buttons) {
@@ -234,17 +234,19 @@ public class KVMManager {
 		if ((buttons & 4) != 0)
 			mask |= InputEvent.BUTTON2_DOWN_MASK;
 		robot.mouseRelease(mask);
-		lastInputTime = getTime();
+		lastInputTime=getTime();
 	}
 
 	long getTime() {
 		return System.currentTimeMillis();
 	}
-
+	
 	public BufferedImage captureScreen() {
 		long t = getTime();
 		long t0 = (t - lastInputTime) / 1000;
 		boolean mustKeepAlive = t0 >= TIMEOUT;
+
+		Rectangle screenbound = gd.getDefaultConfiguration().getBounds();
 
 		BufferedImage img = (cap != null) ? cap.getImage() : robot.createScreenCapture(screenbound);
 

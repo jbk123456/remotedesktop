@@ -28,7 +28,10 @@ public class Tile {
 
 	public interface Observable {
 		public void updateTile(int x, int y);
+
 		public void updateTileFinish();
+
+		public void stop();
 
 	}
 
@@ -61,19 +64,27 @@ public class Tile {
 			ImageWriteParam iwp = imgwriter.getDefaultWriteParam();
 			iwp.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 			iwp.setCompressionQuality(Config.jpeg_quality); // an integer between 0 and 1
-			
+
 			imgwriter.setOutput(ios);
 			IIOMetadata meta = getIIOMetadata(image, imgwriter, iwp);
 			imgwriter.write(meta, new IIOImage(image, null, meta), iwp);
-			if (ios!=null) {
+			if (ios != null) {
 				ios.flush();
 			}
 		} catch (Exception e) {
 			imgwriter.abort();
 			e.printStackTrace();
 		} finally {
-			if (ios!=null) try {ios.close();} catch (Exception e ) {/*ignore*/}
-			if (imgwriter!=null) try {imgwriter.dispose();} catch (Exception e ) {/*ignore*/}
+			if (ios != null)
+				try {
+					ios.close();
+				} catch (Exception e) {
+					/* ignore */}
+			if (imgwriter != null)
+				try {
+					imgwriter.dispose();
+				} catch (Exception e) {
+					/* ignore */}
 		}
 	}
 
@@ -86,13 +97,11 @@ public class Tile {
 		oldsum = checksum.getValue();
 		calcChecksum2(image);
 		if (oldsum != checksum.getValue()) {
-			//System.out.println(getClass().getName() + ": Version changed [" + stream.size() + "]");
 			stream.reset();
 			writeImage(image, stream);
 			dirty = true;
 			return true;
 		} else {
-			//System.out.println(getClass().getName() + ": Version unchange");
 			return false;
 		}
 	}

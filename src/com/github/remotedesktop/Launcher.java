@@ -106,8 +106,12 @@ public class Launcher {
 			try {
 				System.setOut(new PrintStream("remotedesktop_displayserver_log.txt"));
 				System.setErr(new PrintStream("remotedesktop_displayserver_err.txt"));
-				DisplayServer a = new DisplayServer("displayserver", Config.http_server, Config.http_port);
-				a.start();
+				while (true) {
+					DisplayServer displayServer = new DisplayServer("displayserver", Config.http_server, Config.http_port);
+					displayServer.start();
+					displayServer.waitForFinish();
+					System.err.println("restarting displayserver");
+				}
 			} catch (HeadlessException e) {
 				startAsService = true;
 			}

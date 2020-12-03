@@ -19,6 +19,9 @@ import java.util.Iterator;
 public abstract class SocketServer implements Runnable {
 	public static final int BUFFER_SIZE = 1 * 1024 * 1024;
 
+	private Object lockObject = new Object();
+	private boolean isFinish = false;
+	
 	protected final String id;
 	protected final ByteBuffer buffer;
 	protected Selector selector;
@@ -119,15 +122,13 @@ public abstract class SocketServer implements Runnable {
 		}
 	}
 
-	public synchronized void start() {
+	public void start() {
 		Thread executionThread = new Thread(this, id);
 		running = true;
 		executionThread.start();
-		while (executionThread.getState() == NEW)
-			;
 	}
 
-	public void stop() throws IOException {
+	public void stop() {
 		running = false;
 	}
 
@@ -137,6 +138,18 @@ public abstract class SocketServer implements Runnable {
 			runMainLoop();
 		}
 		cleanUp();
+		synchronized(lockObject) {
+			isFinish = true;
+			lockObject.notify();
+		}
+	}
+
+	public void waitForFinish() throws InterruptedException {
+		synchronized (lockObject) {
+			while(!isFinish) {
+				lockObject.wait();
+			}
+		}
 	}
 
 	private void cleanUp() {

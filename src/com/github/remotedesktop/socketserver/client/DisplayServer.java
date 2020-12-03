@@ -98,7 +98,6 @@ public class DisplayServer extends HttpClient implements HttpClient.ResponseHand
 
 	private void handle(Request req, Response res) throws IOException {
 		String path = req.getURI().getPath();
-//		System.out.println("displayserver: ctrl data received: " + path);
 
 		switch (path) {
 		case "/k": {
