@@ -5,69 +5,58 @@ import java.io.IOException;
 public class KeyboardAndMouseSerializer {
 
 	private final StringBuilder b;
+	private String command;
+	private String separator;
 
-	public KeyboardAndMouseSerializer() throws IOException {
+	public KeyboardAndMouseSerializer(String command, String separator) throws IOException {
 		b = new StringBuilder();
+		this.command = command;
+		this.separator = separator;
 	}
+
 	public byte[] getBytes() throws IOException {
 		byte[] result = b.toString().getBytes();
 		b.setLength(0);
 		return result;
 	}
 
-	private void writekeyStroke(int key, int scancode, int mask) throws IOException {
-		b.append("GET /k");
-		b.append("?");
+	public void keyStroke(int key, int scancode, int mask) throws IOException {
+		b.append(command);
+		b.append("k?");
 		b.append("k=");
 		b.append(key);
 		b.append("&v=");
 		b.append(scancode);
 		b.append("&mask=");
 		b.append(mask);
-		b.append("\r\n\r\n");
-	}
-
-	public void keyStroke(int key, int keycode, int mask) throws IOException {
-		writekeyStroke(key, keycode, mask);
+		b.append(separator);
 	}
 
 	public void mouseMove(int x, int y) throws IOException {
-		writemouseMove(x, y);
-	}
-
-	private void writemouseMove(int x, int y) throws IOException {
-		b.append("GET /m");
-		b.append("?");
+		b.append(command);
+		b.append("m?");
 		b.append("x=");
 		b.append(x);
 		b.append("&y=");
 		b.append(y);
-		b.append("\r\n\r\n");
+		b.append(separator);
 	}
 
-	public void mousePress(int buttons) throws IOException {
-		writemousePress(buttons);
-	}
-
-	private void writemousePress(int mask) throws IOException {
-		b.append("GET /p");
-		b.append("?");
+	public void mousePress(int mask) throws IOException {
+		b.append(command);
+		b.append("p?");
 		b.append("v=");
 		b.append(mask);
-		b.append("\r\n\r\n");
+		b.append(separator);
 
 	}
 
-	public void mouseRelease(int buttons) throws IOException {
-		writemouseRelease(buttons);
-	}
-
-	private void writemouseRelease(int mask) throws IOException {
-		b.append("GET /r");
-		b.append("?");
+	public void mouseRelease(int mask) throws IOException {
+		b.append(command);
+		b.append("r?");
 		b.append("v=");
 		b.append(mask);
-		b.append("\r\n\r\n");
+		b.append(separator);
 
 	}
 

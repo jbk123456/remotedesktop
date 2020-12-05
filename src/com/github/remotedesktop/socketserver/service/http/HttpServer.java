@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -32,7 +33,17 @@ import com.github.remotedesktop.socketserver.service.TileSerializationManaer;
 import com.github.remotedesktop.socketserver.service.TileSerializer;
 
 public class HttpServer extends SocketServer {
+	private static final String UTF_8 = "UTF-8";
+
+
+	private static final Pattern WS_MATCHER = Pattern.compile("Sec-WebSocket-Key: (.*)");
+
+
+	private static final Pattern GET_MATCHER = Pattern.compile("^GET");
+
+
 	private static final Logger logger = Logger.getLogger(HttpServer.class.getName());
+
 
 	public static final String HTTP_OK = "200 OK";
 	public static final String HTTP_NOTFOUND = "404 Not Found";
@@ -40,7 +51,10 @@ public class HttpServer extends SocketServer {
 	public static final String HTTP_INTERNALERROR = "500 Internal Server Error";
 	public static final String MIME_DEFAULT_BINARY = "application/octet-stream";
 	public static final String TILEEXT = "JPG";
+
 	private static final byte[] NO_WEBSOCKET_REQUEST = new byte[0];
+	private static final String GET_CMD = "GET /";
+	private static final String HEADER_SEPARATOR = "\r\n\r\n";
 
 	private final TileSerializationManaer tileman;
 	private final KeyboardAndMouseSerializer kvmman;
@@ -48,7 +62,7 @@ public class HttpServer extends SocketServer {
 
 	public HttpServer(String hostname, int port) throws IOException {
 		super("HttpServer", hostname, port);
-		kvmman = new KeyboardAndMouseSerializer();
+		kvmman = new KeyboardAndMouseSerializer(GET_CMD, HEADER_SEPARATOR);
 		tileman = new TileSerializationManaer();
 		websocketProtocolParser = new WebSocketEncoderDecoder();
 	}
@@ -91,22 +105,17 @@ public class HttpServer extends SocketServer {
 
 	private byte[] getWebsocketData(SelectionKey key, byte inputData[]) throws IOException {
 		ByteArrayInputStream in = new ByteArrayInputStream(inputData);
-		Scanner s = new Scanner(in, "UTF-8");
+		Scanner s = new Scanner(in, UTF_8);
 		try {
 			String upgradeData = s.useDelimiter("\\r\\n\\r\\n").next();
-			Matcher get = Pattern.compile("^GET").matcher(upgradeData);
+			Matcher get = GET_MATCHER.matcher(upgradeData);
 			if (get.find()) {
-				Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(upgradeData);
+				Matcher match = WS_MATCHER.matcher(upgradeData);
 				boolean find = match.find();
 				if (!find) {
 					return NO_WEBSOCKET_REQUEST;
 				}
-				byte[] response = ("HTTP/1.1 101 Switching Protocols\r\n" + "Connection: Upgrade\r\n"
-						+ "Upgrade: websocket\r\n" + "Sec-WebSocket-Accept: "
-						+ Base64.getEncoder()
-								.encodeToString(MessageDigest.getInstance("SHA-1").digest(
-										(match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes("UTF-8")))
-						+ "\r\n\r\n").getBytes("UTF-8");
+				byte[] response = getWebsocketResponse(match);
 				setDataBuffer(key, ByteBuffer.wrap(response));
 				if (getMulticastGroup(key)==null) {
 					setDebugContext(key, "websocket request");
@@ -125,6 +134,15 @@ public class HttpServer extends SocketServer {
 		}
 
 		return NO_WEBSOCKET_REQUEST;
+	}
+
+	private byte[] getWebsocketResponse(Matcher match) throws UnsupportedEncodingException, NoSuchAlgorithmException {
+		return ("HTTP/1.1 101 Switching Protocols\r\n" + "Connection: Upgrade\r\n"
+				+ "Upgrade: websocket\r\n" + "Sec-WebSocket-Accept: "
+				+ Base64.getEncoder()
+						.encodeToString(MessageDigest.getInstance("SHA-1").digest(
+								(match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes(UTF_8)))
+				+ HEADER_SEPARATOR).getBytes(UTF_8);
 	}
 
 	private void handle(SelectionKey key, byte[] data) throws IOException {
@@ -207,7 +225,6 @@ public class HttpServer extends SocketServer {
 				break;
 			}
 			case "/sendKey": {
-//				logger.debug("httpserver: ctrl data received: /sendkey");
 				kvmman.keyStroke(Integer.parseInt(req.getParam("key")),Integer.parseInt(req.getParam("code")), Integer.parseInt(req.getParam("mask")));
 				try {
 					writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
