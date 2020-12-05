@@ -23,8 +23,8 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import com.github.remotedesktop.socketserver.ResponseHandler;
+import com.github.remotedesktop.socketserver.SocketServerClient;
 import com.github.remotedesktop.socketserver.http.HttpClientTestAdapter;
-import com.github.remotedesktop.socketserver.service.http.HttpClient;
 import com.github.remotedesktop.socketserver.service.http.HttpServer;
 import com.github.remotedesktop.socketserver.service.http.WebSocketEncoderDecoder;
 
@@ -34,7 +34,7 @@ public class HttpClientIntegrationTest {
 	private static final Logger logger = Logger.getLogger(HttpClientIntegrationTest.class.getName());
 	private String address = "localhost";
 	private HttpServer server;
-	private HttpClient displayServerClient;
+	private SocketServerClient displayServerClient;
 	private HttpClientTestAdapter httpBrowserClient;
 	private HttpClientTestAdapter httpBrowserClient2;
 	private WebSocketEncoderDecoder encoder = new WebSocketEncoderDecoder();
@@ -62,7 +62,7 @@ public class HttpClientIntegrationTest {
 		final CountDownLatch latch = new CountDownLatch(4);
 		final CountDownLatch browserLatch = new CountDownLatch(2);
 
-		displayServerClient = new HttpClient("client one", address, port);
+		displayServerClient = new SocketServerClient("client one", address, port);
 		displayServerClient.setResponseHandler(new ResponseHandler() {
 
 			@Override
@@ -114,7 +114,7 @@ public class HttpClientIntegrationTest {
 
 		final CountDownLatch latch = new CountDownLatch(3);
 
-		displayServerClient = new HttpClient("client one", address, port);
+		displayServerClient = new SocketServerClient("client one", address, port);
 		displayServerClient.setResponseHandler(new ResponseHandler() {
 
 			@Override
@@ -166,7 +166,7 @@ public class HttpClientIntegrationTest {
 		final CountDownLatch latch = new CountDownLatch(6);
 		final CountDownLatch browserLatch = new CountDownLatch(4);
 
-		displayServerClient = new HttpClient("client one", address, port);
+		displayServerClient = new SocketServerClient("client one", address, port);
 		displayServerClient.setResponseHandler(new ResponseHandler() {
 
 			@Override

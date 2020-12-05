@@ -1,4 +1,4 @@
-package com.github.remotedesktop.socketserver.service.http;
+package com.github.remotedesktop.socketserver;
 
 import static java.nio.channels.SelectionKey.OP_CONNECT;
 import static java.nio.channels.SelectionKey.OP_READ;
@@ -13,16 +13,13 @@ import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.LinkedList;
 import java.util.logging.Logger;
 
-import com.github.remotedesktop.socketserver.ResponseHandler;
-import com.github.remotedesktop.socketserver.SocketServer;
-
-public class HttpClient extends SocketServer {
-	private static final Logger logger = Logger.getLogger(HttpClient.class.getName());
+public class SocketServerClient extends SocketServer {
+	private static final Logger logger = Logger.getLogger(SocketServerClient.class.getName());
 	private ResponseHandler handler;
 	private final LinkedList<ByteBuffer> messages;
 
 
-	public HttpClient(String id, String hostname, int port) throws IOException {
+	public SocketServerClient(String id, String hostname, int port) throws IOException {
 		super(id, new InetSocketAddress(hostname, port));
 		this.messages = new LinkedList<>();
 	}

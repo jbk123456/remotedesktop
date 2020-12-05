@@ -8,12 +8,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.github.remotedesktop.socketserver.ResponseHandler;
-import com.github.remotedesktop.socketserver.service.http.HttpClient;
+import com.github.remotedesktop.socketserver.SocketServerClient;
 import com.github.remotedesktop.socketserver.service.http.HttpServer;
 import com.github.remotedesktop.socketserver.service.http.Request;
 import com.github.remotedesktop.socketserver.service.http.Response;
 
-public class DisplayServer extends HttpClient implements ResponseHandler, Tile.Observable {
+public class DisplayServer extends SocketServerClient implements ResponseHandler, Tile.Observable {
 
 	private static final Logger logger = Logger.getLogger(DisplayServer.class.getName());
 
