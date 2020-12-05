@@ -19,7 +19,6 @@ public class KVMManager {
 	private Map<Integer, Integer> keymap;
 	private WindowCapture cap;
 	private Robot robot;
-//	private Rectangle screenbound;
 	private long lastInputTime = 0;
 	private short count = 0;
 	private GraphicsEnvironment ge;
@@ -247,7 +246,6 @@ public class KVMManager {
 		boolean mustKeepAlive = t0 >= TIMEOUT;
 
 		Rectangle screenbound = gd.getDefaultConfiguration().getBounds();
-
 		BufferedImage img = (cap != null) ? cap.getImage() : robot.createScreenCapture(screenbound);
 
 		if (mustKeepAlive) {

@@ -20,16 +20,20 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.github.remotedesktop.Config;
 import com.github.remotedesktop.socketserver.SocketServer;
 import com.github.remotedesktop.socketserver.service.KeyboardAndMouseSerializer;
-import com.github.remotedesktop.socketserver.service.TileSerializer;
 import com.github.remotedesktop.socketserver.service.TileSerializationManaer;
+import com.github.remotedesktop.socketserver.service.TileSerializer;
 
 public class HttpServer extends SocketServer {
+	private static final Logger logger = Logger.getLogger(HttpServer.class.getName());
+
 	public static final String HTTP_OK = "200 OK";
 	public static final String HTTP_NOTFOUND = "404 Not Found";
 	public static final String HTTP_FORBIDDEN = "403 Forbidden";
@@ -107,7 +111,7 @@ public class HttpServer extends SocketServer {
 				if (getMulticastGroup(key)==null) {
 					setDebugContext(key, "websocket request");
 					setMulticastGroup(key, MulticastGroup.RECEIVER);
-					System.out.println("Browser connected: " + key.attachment());
+					logger.fine("Browser connected: " + key.attachment());
 				}
 				write(key);
 				return null;
@@ -174,7 +178,7 @@ public class HttpServer extends SocketServer {
 			case "/tile": { // tile prrocessed, 
 				if (getMulticastGroup(key)==null) {
 					setMulticastGroup(key, MulticastGroup.SENDER);
-					System.out.println("DisplayServer connected: " + key.attachment());
+					logger.fine("DisplayServer connected: " + key.attachment());
 				}
 				
 				tileman.processImage(req.getData(), Integer.parseInt(req.getParam("x")),
@@ -184,22 +188,31 @@ public class HttpServer extends SocketServer {
 				break;
 			}
 
+			case "/ping": {
+				res.message(req.getData());
+				try {
+					writeTo(key, ByteBuffer.wrap(res.getResponse()));
+				} catch (IOException e) {
+					logger.log(Level.SEVERE, "ping", e);
+				}
+				break;
+			}
 			case "/": {
 				res.redirect("/remotedesktop.html");
 				try {
 					writeTo(key, ByteBuffer.wrap(res.getResponse()));
 				} catch (IOException e) {
-					e.printStackTrace();
+					logger.log(Level.SEVERE, "redirect", e);
 				}
 				break;
 			}
 			case "/sendKey": {
-//				System.out.println("httpserver: ctrl data received: /sendkey");
+//				logger.debug("httpserver: ctrl data received: /sendkey");
 				kvmman.keyStroke(Integer.parseInt(req.getParam("key")),Integer.parseInt(req.getParam("code")), Integer.parseInt(req.getParam("mask")));
 				try {
 					writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
 				} catch (Exception e) {
-					e.printStackTrace();
+					logger.log(Level.SEVERE, "write to group sender", e);
 				}
 				break;
 			}
@@ -227,7 +240,7 @@ public class HttpServer extends SocketServer {
 				try {
 					writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
 				} catch (Exception e) {
-					e.printStackTrace();
+					logger.log(Level.SEVERE, "write to group sender", e);
 				}
 
 				break;
@@ -309,7 +322,7 @@ public class HttpServer extends SocketServer {
 			return out.toByteArray();
 	}
 	  public void cancelKey(SelectionKey key) {
-		  System.out.println("HttpServer: cancel key for: " + key.channel()  + " " +key.attachment());
+		  logger.fine("HttpServer: cancel key for: " + key.channel()  + " " +key.attachment());
 	      key.cancel();
 	   }
 

@@ -6,6 +6,8 @@ import java.awt.image.PixelGrabber;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.Adler32;
 
 import javax.imageio.IIOImage;
@@ -20,6 +22,7 @@ import com.github.remotedesktop.Config;
 
 public class Tile {
 
+	private static final Logger logger = Logger.getLogger(Tile.class.getName());
 	private ByteArrayOutputStream stream;
 	private Adler32 checksum;
 	private boolean dirty;
@@ -73,7 +76,7 @@ public class Tile {
 			}
 		} catch (Exception e) {
 			imgwriter.abort();
-			e.printStackTrace();
+			logger.log(Level.SEVERE, "write image", e);
 		} finally {
 			if (ios != null)
 				try {
@@ -127,11 +130,11 @@ public class Tile {
 		try {
 			pg.grabPixels(1);
 		} catch (InterruptedException e) {
-			System.err.println("interrupted waiting for pixels!");
+			logger.info("interrupted waiting for pixels!");
 			return;
 		}
 		if ((pg.getStatus() & ImageObserver.ABORT) != 0) {
-			System.err.println("image fetch aborted or errored");
+			logger.info("image fetch aborted or errored");
 			return;
 		}
 

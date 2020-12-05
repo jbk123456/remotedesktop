@@ -13,24 +13,30 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import com.github.remotedesktop.socketserver.ResponseHandler;
-import com.github.remotedesktop.socketserver.http.HttpTestClient;
+import com.github.remotedesktop.socketserver.http.HttpClientTestAdapter;
 import com.github.remotedesktop.socketserver.service.http.HttpClient;
 import com.github.remotedesktop.socketserver.service.http.HttpServer;
 import com.github.remotedesktop.socketserver.service.http.WebSocketEncoderDecoder;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class HttpClientIntegrationTest {
 
+	private static final Logger logger = Logger.getLogger(HttpClientIntegrationTest.class.getName());
 	private String address = "localhost";
 	private HttpServer server;
 	private HttpClient displayServerClient;
-	private HttpTestClient httpBrowserClient;
-	private HttpTestClient httpBrowserClient2;
+	private HttpClientTestAdapter httpBrowserClient;
+	private HttpClientTestAdapter httpBrowserClient2;
 	private WebSocketEncoderDecoder encoder = new WebSocketEncoderDecoder();
 	private byte[] img1;
 	private byte[] img2;
@@ -39,10 +45,13 @@ public class HttpClientIntegrationTest {
 	public void cleanUp() throws Exception {
 		displayServerClient.stop();
 		httpBrowserClient.stop();
+		if (httpBrowserClient2!=null) {
+			httpBrowserClient2.stop();
+		}
 		server.stop();
 	}
 
-	@Test (timeout = 2000)
+	@Test(timeout = 2000)
 	public void sendTiles_expect_WebServerConstructsTiledoc() throws Exception {
 		server = new HttpServer("localhost", 0);
 		server.start();
@@ -54,7 +63,7 @@ public class HttpClientIntegrationTest {
 		final CountDownLatch browserLatch = new CountDownLatch(2);
 
 		displayServerClient = new HttpClient("client one", address, port);
-		displayServerClient.setResponseHandler(new HttpClient.ResponseHandler() {
+		displayServerClient.setResponseHandler(new ResponseHandler() {
 
 			@Override
 			public void onMessage(SelectionKey key, byte[] message) throws IOException {
@@ -62,9 +71,9 @@ public class HttpClientIntegrationTest {
 			}
 		});
 		displayServerClient.start();
-		httpBrowserClient = new HttpTestClient("client two", address, port, new ResponseHandler() {
+		httpBrowserClient = new HttpClientTestAdapter("client two", address, port, new ResponseHandler() {
 			@Override
-			public void onMessage(byte[] message) {
+			public void onMessage(SelectionKey key, byte[] message) {
 				results.add(message);
 				browserLatch.countDown();
 				latch.countDown();
@@ -77,6 +86,7 @@ public class HttpClientIntegrationTest {
 
 		// put client2 in Multicast group "RECEIVER"
 		httpBrowserClient.sendMessage(getWSUpgradeMessage());
+		avoidPackageMerging();
 
 		// write two images and expect that client2 receives a document containing
 		// these images
@@ -87,18 +97,14 @@ public class HttpClientIntegrationTest {
 		// wait until the browser has received the document
 		browserLatch.await();
 		browserFetchImage(0, 0);
-		// TODO: Etwas warten, damit die Pakete nicht zusammengemerged werden:
-		// Packet-Splitting Ist für tiles schlicht nicht implementiert
-		// Der Browser würde hier zwei kaputte Images bekommen (das erste Image mit
-		// Teilen des Nachfolgers) und beide verwerfen
-		Thread.sleep(10);
+		avoidPackageMerging();
 		browserFetchImage(1, 1);
 		latch.await();
 
 		checkResults(results);
 	}
 
-	@Test (timeout = 2000)
+	@Test(timeout = 2000)
 	public void sendTiles_expect_allClientsReceiveTiles() throws Exception {
 		server = new HttpServer("localhost", 0);
 		server.start();
@@ -109,7 +115,7 @@ public class HttpClientIntegrationTest {
 		final CountDownLatch latch = new CountDownLatch(3);
 
 		displayServerClient = new HttpClient("client one", address, port);
-		displayServerClient.setResponseHandler(new HttpClient.ResponseHandler() {
+		displayServerClient.setResponseHandler(new ResponseHandler() {
 
 			@Override
 			public void onMessage(SelectionKey key, byte[] message) throws IOException {
@@ -117,16 +123,16 @@ public class HttpClientIntegrationTest {
 			}
 		});
 		displayServerClient.start();
-		httpBrowserClient = new HttpTestClient("client two", address, port, new ResponseHandler() {
+		httpBrowserClient = new HttpClientTestAdapter("client two", address, port, new ResponseHandler() {
 			@Override
-			public void onMessage(byte[] message) {
+			public void onMessage(SelectionKey key, byte[] message) {
 				latch.countDown();
 			}
 		});
 		httpBrowserClient.start();
-		httpBrowserClient2 = new HttpTestClient("client three", address, port, new ResponseHandler() {
+		httpBrowserClient2 = new HttpClientTestAdapter("client three", address, port, new ResponseHandler() {
 			@Override
-			public void onMessage(byte[] message) {
+			public void onMessage(SelectionKey key, byte[] message) {
 				latch.countDown();
 			}
 		});
@@ -138,6 +144,7 @@ public class HttpClientIntegrationTest {
 		// put client2 in Multicast group "RECEIVER"
 		httpBrowserClient.sendMessage(getWSUpgradeMessage());
 		httpBrowserClient2.sendMessage(getWSUpgradeMessage());
+		avoidPackageMerging(); // avoid package merging, as we count the received packed
 
 		// write two images and expect that client2 receives a document containing
 		// these images
@@ -148,7 +155,7 @@ public class HttpClientIntegrationTest {
 
 	}
 
-	@Test (timeout = 2000)
+	@Test(timeout = 2000)
 	public void sendTilesAndInput_expect_serverReceivesAllInput() throws Exception {
 		server = new HttpServer("localhost", 0);
 		server.start();
@@ -160,7 +167,7 @@ public class HttpClientIntegrationTest {
 		final CountDownLatch browserLatch = new CountDownLatch(4);
 
 		displayServerClient = new HttpClient("client one", address, port);
-		displayServerClient.setResponseHandler(new HttpClient.ResponseHandler() {
+		displayServerClient.setResponseHandler(new ResponseHandler() {
 
 			@Override
 			public void onMessage(SelectionKey key, byte[] message) throws IOException {
@@ -170,19 +177,19 @@ public class HttpClientIntegrationTest {
 			}
 		});
 		displayServerClient.start();
-		httpBrowserClient = new HttpTestClient("client two", address, port, new ResponseHandler() {
+		httpBrowserClient = new HttpClientTestAdapter("client two", address, port, new ResponseHandler() {
 
 			@Override
-			public void onMessage(byte[] message) {
+			public void onMessage(SelectionKey key, byte[] message) {
 				latch.countDown();
 				browserLatch.countDown();
 			}
 		});
 		httpBrowserClient.start();
-		httpBrowserClient2 = new HttpTestClient("client three", address, port, new ResponseHandler() {
+		httpBrowserClient2 = new HttpClientTestAdapter("client three", address, port, new ResponseHandler() {
 
 			@Override
-			public void onMessage(byte[] message) {
+			public void onMessage(SelectionKey key, byte[] message) {
 				latch.countDown();
 				browserLatch.countDown();
 			}
@@ -195,22 +202,26 @@ public class HttpClientIntegrationTest {
 		// put client2 in Multicast group "RECEIVER"
 		httpBrowserClient.sendMessage(getWSUpgradeMessage());
 		httpBrowserClient2.sendMessage(getWSUpgradeMessage());
+		avoidPackageMerging(); // avoid package merging, as we count the received packed
 
 		// write two images and expect that client2 receives a document containing
 		// these images
 		writeImageFromDisplayServerToHttpServer("Tux.png", 0, 0);
-		Thread.sleep(150);// TODO: split/merge packets
 		writeImageFromDisplayServerToHttpServerFinish();
 		browserLatch.await();
 
 		browserSendKeyEvent(httpBrowserClient2);
-		Thread.sleep(150); // TODO: split/merge packets
+		avoidPackageMerging(); // avoid package merging, as we count the received packed
 		browserSendKeyEvent(httpBrowserClient);
 		latch.await();
 
 	}
 
-	private void browserSendKeyEvent(HttpTestClient client) throws IOException {
+	private void avoidPackageMerging() throws InterruptedException {
+		Thread.sleep(200);
+	}
+
+	private void browserSendKeyEvent(HttpClientTestAdapter client) throws IOException {
 		String message = "GET /sendKey?key=0&code=0&mask=0&c=" + Math.random() + "\r\n\r\n";
 		client.sendMessage(encoder.encodeFrame(message));
 
@@ -226,10 +237,10 @@ public class HttpClientIntegrationTest {
 		b.append("\r\n\r\n");
 		byte[] document = b.toString().getBytes();
 		try {
-			System.out.println("displayserver: update tileDoc called");
+			logger.fine("displayserver: update tileDoc called");
 			displayServerClient.writeToServer(ByteBuffer.wrap(document));
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.log(Level.SEVERE, "write image", e);
 		}
 	}
 
@@ -255,12 +266,8 @@ public class HttpClientIntegrationTest {
 
 		System.arraycopy(req, 0, document, 0, req.length);
 		System.arraycopy(tuxTile, 0, document, req.length, tuxTile.length);
-		try {
-			System.out.println("displayserver: update tile called");
-			displayServerClient.writeToServer(ByteBuffer.wrap(document));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		logger.fine("displayserver: update tile called");
+		displayServerClient.writeToServerBuffer(ByteBuffer.wrap(document));
 		return document;
 	}
 

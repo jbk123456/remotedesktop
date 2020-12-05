@@ -11,16 +11,16 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.LinkedList;
+import java.util.logging.Logger;
 
+import com.github.remotedesktop.socketserver.ResponseHandler;
 import com.github.remotedesktop.socketserver.SocketServer;
 
 public class HttpClient extends SocketServer {
+	private static final Logger logger = Logger.getLogger(HttpClient.class.getName());
 	private ResponseHandler handler;
 	private final LinkedList<ByteBuffer> messages;
 
-	public interface ResponseHandler {
-		void onMessage(SelectionKey key, byte[] message) throws IOException;
-	}
 
 	public HttpClient(String id, String hostname, int port) throws IOException {
 		super(id, new InetSocketAddress(hostname, port));
@@ -86,12 +86,11 @@ public class HttpClient extends SocketServer {
 		}
 
 		write(key);
-		return true;
-	}
+		return true;	}
 
 	@Override
 	protected void cancelKey(SelectionKey key) {
-		  System.out.println("HttpClient: cancel key for: " + key.channel()  + " " +key.attachment());
+		  logger.fine("HttpClient: cancel key for: " + key.channel()  + " " +key.attachment());
 
 		key.cancel();
 		close(key.channel());

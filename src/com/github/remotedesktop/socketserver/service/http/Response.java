@@ -88,15 +88,23 @@ public class Response {
 		setReady();
 	}
 
-	public void message(String s, String s1, String s2) {
+	public void message(String s, String s1, byte[] b) {
 		httpStatus = s;
 		setMimeType(s1);
-		data = (s2.getBytes());
+		data = b;
 		setReady();
+	}
+
+	public void message(String s, String s1, String s2) {
+		message(s, s1, s2.getBytes());
 	}
 
 	public void message(String s, String s1) {
 		message(s, getMimeType(), s1);
+	}
+
+	public void message(byte[] b) {
+		message(httpStatus, getMimeType(), b);
 	}
 
 	public void exception(String s, String s1) throws IOException {

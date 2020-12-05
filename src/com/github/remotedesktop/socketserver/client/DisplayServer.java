@@ -4,13 +4,18 @@ import java.awt.AWTException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import com.github.remotedesktop.socketserver.ResponseHandler;
 import com.github.remotedesktop.socketserver.service.http.HttpClient;
 import com.github.remotedesktop.socketserver.service.http.HttpServer;
 import com.github.remotedesktop.socketserver.service.http.Request;
 import com.github.remotedesktop.socketserver.service.http.Response;
 
-public class DisplayServer extends HttpClient implements HttpClient.ResponseHandler, Tile.Observable {
+public class DisplayServer extends HttpClient implements ResponseHandler, Tile.Observable {
+
+	private static final Logger logger = Logger.getLogger(DisplayServer.class.getName());
 
 	private KVMManager kvmman;
 	private TileManager tileman;
@@ -90,7 +95,7 @@ public class DisplayServer extends HttpClient implements HttpClient.ResponseHand
 				setDebugContext(key, req.getURI().getPath());
 				handle(req, res);
 			} catch (IOException e) {
-				e.printStackTrace();
+				logger.log(Level.SEVERE, "on message", e);
 			}
 		} while (remaining > 0);
 

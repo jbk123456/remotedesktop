@@ -1,10 +1,14 @@
 package com.github.remotedesktop.socketserver.client;
 
 import java.awt.image.BufferedImage;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.github.remotedesktop.Config;
 
 public class ScreenScanner implements Runnable {
+
+	private static final Logger logger = Logger.getLogger(ScreenScanner.class.getName());
 
 	private KVMManager kvmman;
 	private TileManager tileman;
@@ -32,7 +36,7 @@ public class ScreenScanner implements Runnable {
 				notifyObservers();
 				Thread.sleep((int) (1000 / Config.fps));
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.log(Level.SEVERE, "capture screen", e);
 				tileobs.stop();
 				break;
 			}

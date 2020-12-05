@@ -1,7 +1,6 @@
 package com.github.remotedesktop.socketserver;
 
 import static java.lang.System.arraycopy;
-import static java.lang.Thread.State.NEW;
 import static java.nio.channels.SelectionKey.OP_READ;
 
 import java.io.Closeable;
@@ -15,8 +14,12 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public abstract class SocketServer implements Runnable {
+	private static final Logger logger = Logger.getLogger(SocketServer.class.getName());
+
 	public static final int BUFFER_SIZE = 1 * 1024 * 1024;
 
 	private Object lockObject = new Object();
@@ -118,7 +121,7 @@ public abstract class SocketServer implements Runnable {
 			}
 		}
 		if (clients == 0) {
-			System.out.println("write to group: " + role + " nobody cares");
+			logger.fine("write to group: " + role + " nobody cares");
 		}
 	}
 
@@ -164,7 +167,7 @@ public abstract class SocketServer implements Runnable {
 			select();
 
 			Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-			// System.out.println("main oop key length:::" + selector.keys().size());
+			// logger.debug("main oop key length:::" + selector.keys().size());
 
 			while (iterator.hasNext()) {
 				SelectionKey key = iterator.next();
@@ -185,12 +188,12 @@ public abstract class SocketServer implements Runnable {
 						write(key);
 					}
 				} catch (IOException e) {
-					e.printStackTrace();
+					logger.log(Level.SEVERE, "select", e);
 					cancelKey(key);
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.log(Level.SEVERE, "socket server terminated", e);
 			try {
 				Thread.sleep(10000);
 				if (selector.isOpen())
@@ -202,7 +205,7 @@ public abstract class SocketServer implements Runnable {
 				this.channel = channel(address);
 				this.selector = selector();
 			} catch (Exception ee) {
-				ee.printStackTrace();
+				logger.log(Level.SEVERE, "fatal error", ee);
 			}
 		}
 	}
@@ -218,7 +221,7 @@ public abstract class SocketServer implements Runnable {
 		SocketChannel channel = (SocketChannel) key.channel();
 		boolean connected = channel.finishConnect();
 		if (!connected) {
-			System.out.println("not yet connected");
+			logger.fine("not yet connected");
 		}
 		channel.configureBlocking(false);
 		registerKeyForAttachments(channel.register(selector, OP_READ));

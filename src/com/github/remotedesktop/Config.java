@@ -3,11 +3,14 @@ package com.github.remotedesktop;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Config {
+	private static final Logger logger = Logger.getLogger(Config.class.getName());
 
-   public static String default_start_as_service = "false";
-   public static String default_start_as_daemon = "false";
+	public static String default_start_as_service = "false";
+	public static String default_start_as_daemon = "false";
 	public static String default_http_server = "localhost";
 	public static String default_http_port = "6502";
 	public static String default_jpeg_quality = "0.5";
@@ -19,20 +22,20 @@ public class Config {
 	public static final String HTTP_PORT = "HTTP_PORT";
 	public static final String HTTP_SERVER = "HTTP_SERVER";
 	public static final String FPS = "FPS";
-   public static final String START_AS_SERVICE = "START_AS_SERVICE";
-   public static final String START_AS_DAEMON = "START_AS_DAEMON";
+	public static final String START_AS_SERVICE = "START_AS_SERVICE";
+	public static final String START_AS_DAEMON = "START_AS_DAEMON";
 
 	public static float jpeg_quality;
 	public static int http_port;
 	public static String http_server;
 	public static float fps;
-   public static boolean start_as_service;
-   public static boolean start_as_daemon;
+	public static boolean start_as_service;
+	public static boolean start_as_daemon;
 
 	public static Properties getDefaultProperties() {
 		Properties defaultProp = new Properties();
-      defaultProp.setProperty(START_AS_SERVICE, default_start_as_service);
-      defaultProp.setProperty(START_AS_DAEMON, default_start_as_daemon);
+		defaultProp.setProperty(START_AS_SERVICE, default_start_as_service);
+		defaultProp.setProperty(START_AS_DAEMON, default_start_as_daemon);
 		defaultProp.setProperty(HTTP_SERVER, default_http_server);
 		defaultProp.setProperty(HTTP_PORT, default_http_port);
 		defaultProp.setProperty(JPEG_QUALITY, default_jpeg_quality);
@@ -45,8 +48,8 @@ public class Config {
 		http_port = Integer.parseInt(prop.getProperty(HTTP_PORT));
 		jpeg_quality = Float.parseFloat(prop.getProperty(JPEG_QUALITY));
 		fps = Float.parseFloat(prop.getProperty(FPS));
-      start_as_service = Boolean.parseBoolean(prop.getProperty(START_AS_SERVICE));
-      start_as_daemon = Boolean.parseBoolean(prop.getProperty(START_AS_DAEMON));
+		start_as_service = Boolean.parseBoolean(prop.getProperty(START_AS_SERVICE));
+		start_as_daemon = Boolean.parseBoolean(prop.getProperty(START_AS_DAEMON));
 	}
 
 	public static void load(String path, boolean refresh) {
@@ -67,7 +70,7 @@ public class Config {
 				prop.store(fos, "remotedesktop config");
 				fos.close();
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.log(Level.SEVERE, "write config file", e);
 			}
 		}
 		assignValue();

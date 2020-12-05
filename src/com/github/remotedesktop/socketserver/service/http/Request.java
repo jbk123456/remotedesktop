@@ -5,8 +5,12 @@ import java.net.URI;
 import java.nio.channels.SelectionKey;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Request {
+	private static final Logger logger = Logger.getLogger(Request.class.getName());
+
 	private URI uri;
 	private Properties params;
 	private Properties headers;
@@ -99,7 +103,7 @@ public class Request {
 			}
 
 		} catch (Throwable t) {
-			t.printStackTrace();
+			logger.log(Level.SEVERE, "parse request line", t);
 		}
 	}
 

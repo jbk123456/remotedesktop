@@ -2,13 +2,25 @@ package com.github.remotedesktop;
 
 import java.awt.HeadlessException;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.text.MessageFormat;
+import java.util.Date;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.StreamHandler;
 
 import com.github.remotedesktop.socketserver.client.DisplayServer;
 import com.github.remotedesktop.socketserver.service.http.HttpServer;
 
 public class Launcher {
 	private static final String PREFIX = "REMOTEDESKTOP_";
+	private static final Logger logger = Logger.getLogger(Launcher.class.getName());
 
 	public static void main(String args[]) throws Exception {
 		boolean refreshIni = false;
@@ -103,26 +115,64 @@ public class Launcher {
 
 		boolean startAsService = Config.start_as_service;
 		if (!startAsService) {
+			setupLogger("remotedesktop_displayserver_log.txt");
+			logger.info("display server started, reporting to http server: " + Config.http_server+":"+Config.http_port);
 			try {
-				System.setOut(new PrintStream("remotedesktop_displayserver_log.txt"));
-				System.setErr(new PrintStream("remotedesktop_displayserver_err.txt"));
 				while (true) {
-					DisplayServer displayServer = new DisplayServer("displayserver", Config.http_server, Config.http_port);
+					DisplayServer displayServer = new DisplayServer("displayserver", Config.http_server,
+							Config.http_port);
 					displayServer.start();
 					displayServer.waitForFinish();
-					System.err.println("restarting displayserver");
+					logger.info("restarting displayserver");
 				}
 			} catch (HeadlessException e) {
 				startAsService = true;
 			}
 		}
 		if (startAsService) {
-			System.setOut(new PrintStream("remotedesktop_httpserver_log.txt"));
-			System.setErr(new PrintStream("remotedesktop_httpserver_err.txt"));
+			setupLogger("remotedesktop_httpserver_log.txt");
+			logger.info("http server started on port: " + Config.http_port);
+
 			HttpServer server = new HttpServer(null, Config.http_port);
 			server.start();
 		}
 
 	}
 
+	private static void setupLogger(String file) {
+		Logger rootLogger = Logger.getLogger("");
+		Handler[] handlers = rootLogger.getHandlers();
+		if (handlers[0] instanceof ConsoleHandler) {
+			rootLogger.removeHandler(handlers[0]);
+		}
+		logger.setLevel(Level.ALL);
+		StreamHandler handler;
+		try {
+			handler = new FileHandler(file);
+		} catch (SecurityException | IOException e) {
+			e.printStackTrace();
+			handler = new ConsoleHandler();
+		}
+		SimpleFormatter formatterTxt = new SimpleFormatter() {
+			public String format(LogRecord r) {
+				StringBuilder sb = new StringBuilder();
+				sb.append(MessageFormat.format("{0, date} {0, time} ", new Object[] { new Date(r.getMillis()) }));
+				sb.append(r.getSourceClassName()).append(" ");
+				sb.append(r.getSourceMethodName()).append(" ");
+				sb.append(r.getLevel().getName()).append(": ");
+				sb.append(formatMessage(r)).append(" ");
+				if (r.getThrown() != null) {
+					StringWriter sw = new StringWriter();
+					PrintWriter w = new PrintWriter(sw);
+					r.getThrown().printStackTrace(w);
+					sb.append(sw.getBuffer().toString());
+				}
+				sb.append(System.lineSeparator());
+				return sb.toString();
+			}
+		};
+
+		handler.setFormatter(formatterTxt);
+		logger.addHandler(handler);
+	}
 }
