@@ -55,8 +55,9 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 		writeToServerBuffer(ByteBuffer.wrap(data));
 	}
 	@Override
-	public void updateTileFinish() {
-		StringBuilder b = new StringBuilder("GET /tiledoc");
+	public void updateTileFinish(String cursor) {
+		StringBuilder b = new StringBuilder("GET /tiledoc?cursor=");
+		b.append(cursor);
 		b.append("\r\n\r\n");
 		byte[] req = b.toString().getBytes();
 		

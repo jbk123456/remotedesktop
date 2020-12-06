@@ -1,6 +1,6 @@
 package com.github.remotedesktop;
 
-import java.awt.HeadlessException;
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -113,20 +113,16 @@ public class Launcher {
 			System.exit(0);
 		}
 
-		boolean startAsService = Config.start_as_service;
+		boolean startAsService = Config.start_as_service && !GraphicsEnvironment.isHeadless();
 		if (!startAsService) {
 			setupLogger("remotedesktop_displayserver_log.txt");
-			logger.info("display server started, reporting to http server: " + Config.http_server+":"+Config.http_port);
-			try {
-				while (true) {
-					DisplayServer displayServer = new DisplayServer("displayserver", Config.http_server,
-							Config.http_port);
-					displayServer.start();
-					displayServer.waitForFinish();
-					logger.info("restarting displayserver");
-				}
-			} catch (HeadlessException e) {
-				startAsService = true;
+			logger.info(
+					"display server started, reporting to http server: " + Config.http_server + ":" + Config.http_port);
+			while (true) {
+				DisplayServer displayServer = new DisplayServer("displayserver", Config.http_server, Config.http_port);
+				displayServer.start();
+				displayServer.waitForFinish();
+				logger.info("restarting displayserver");
 			}
 		}
 		if (startAsService) {

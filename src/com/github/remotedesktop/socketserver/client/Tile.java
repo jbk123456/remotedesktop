@@ -32,7 +32,7 @@ public class Tile {
 	public interface Observable {
 		public void updateTile(int x, int y);
 
-		public void updateTileFinish();
+		public void updateTileFinish(String cursor);
 
 		public void stop();
 

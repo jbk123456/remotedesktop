@@ -170,6 +170,9 @@ public class HttpServer extends SocketServer {
 			
 			case "/tiledoc": { // tiles prrocessed, write back document containing the links to the images
 				StringBuilder sb = new StringBuilder();
+				sb.append("document.getElementById(\"canvas\").style.cursor=\"");
+				sb.append(req.getParam("cursor"));
+				sb.append("\";");
 				Random r = new Random(System.currentTimeMillis());
 				for (int i = 0; i < tileman.getNumXTile(); i++) {
 					for (int j = 0; j < tileman.getNumYTile(); j++) {

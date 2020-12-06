@@ -2,7 +2,10 @@ package com.github.remotedesktop.socketserver.client.jna;
 
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
@@ -22,6 +25,7 @@ import com.sun.jna.platform.win32.WinDef.POINT;
 import com.sun.jna.platform.win32.WinDef.RECT;
 import com.sun.jna.platform.win32.WinGDI;
 import com.sun.jna.platform.win32.WinGDI.BITMAPINFO;
+import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.platform.win32.WinUser;
 import com.sun.jna.platform.win32.WinUser.HHOOK;
@@ -35,16 +39,68 @@ public class WindowCapture {
 	static final int ES_AWAYMODE_REQUIRED = 0x00000040; // Not supported by Windows XP/Windows Server 2003
 	static final int ES_CONTINUOUS = 0x80000000;
 
+	private final Map<WinNT.HANDLE, Cursor> cursors;
+	private static final Map<String, String> win2Html = getCursorToHtmlMap();
+
 	public WindowCapture() {
 		HWND hWnd = User32Extra.INSTANCE.GetDesktopWindow();
 		RECT r = new RECT();
 		User32.INSTANCE.GetWindowRect(hWnd, r);
 		discardLocalInput();
+		cursors = loadCursors();
+
+	}
+
+	private static Map<String, String> getCursorToHtmlMap() {
+		Map<String, String> map = new HashMap<>();
+		map.put("APPSTARTING", "progress");
+		map.put("NORMAL", "default");
+		map.put("CROSS", "crosshair");
+		map.put("HAND", "pointer");
+		map.put("HELP", "help");
+		map.put("IBEAM", "text");
+		map.put("NO", "not-allowed");
+		map.put("SIZEALL", "all-scroll");
+		map.put("SIZENESW", "nesw-resize");
+		map.put("SIZENS", "ns-resize");
+		map.put("SIZENWSE", "nwse-resize");
+		map.put("SIZEWE", "ew-resize");
+		map.put("UP", "n-resize");
+		map.put("WAIT", "wait");
+		map.put("PEN", "crosshair");
+		return map;
+	}
+
+	public String getPointer() {
+		Cursor c = getCurrentCursor();
+		if (c != null) {
+			String cursor = win2Html.get(c.toString());
+			if (cursor != null) {
+				return cursor;
+			}
+		}
+		return "default";
 	}
 
 	public BufferedImage getImage() {
 		HWND hWnd = User32Extra.INSTANCE.GetDesktopWindow();
 		return getScreenshot(hWnd);
+	}
+
+	private Cursor getCurrentCursor() {
+		final CURSORINFO cursorinfo = new CURSORINFO();
+		final int success = User32Extra.INSTANCE.GetCursorInfo(cursorinfo);
+		if (success != 1) {
+			throw new IllegalArgumentException("getCursorInfo");
+		}
+
+		// you can use the address printed here to map the others cursors like
+		// ALL_SCROLL
+		// some times cursor can be hidden, in this case it will be null
+		if (cursorinfo.hCursor != null && cursors.containsKey(cursorinfo.hCursor)) {
+			return cursors.get(cursorinfo.hCursor);
+		}
+		return null;
 	}
 
 	private static BufferedImage getScreenshot(HWND hWnd) {
@@ -144,20 +200,22 @@ public class WindowCapture {
 		t.start();
 	}
 
-	public static class WindowInfo {
-		HWND hwnd;
-		RECT rect;
-		String title;
+	private Map<WinNT.HANDLE, Cursor> loadCursors() {
+		final Map<WinNT.HANDLE, Cursor> cursors = new HashMap<>();
+		for (final Cursor cursor : Cursor.values()) {
 
-		public WindowInfo(HWND hwnd, RECT rect, String title) {
-			this.hwnd = hwnd;
-			this.rect = rect;
-			this.title = title;
-		}
+			final Memory memory = new Memory(Native.getNativeSize(Long.class, null));
+			memory.setLong(0, cursor.getCode());
+			final Pointer resource = memory.getPointer(0);
+			final WinNT.HANDLE hcursor = User32Extra.INSTANCE.LoadImageA(null, resource, WinUser.IMAGE_CURSOR, 0, 0,
+					WinUser.LR_SHARED);
+			if (hcursor == null || Native.getLastError() != 0) {
+				throw new Error("Cursor could not be loaded: " + String.valueOf(Native.getLastError()));
+			}
 
-		public String toString() {
-			return String.format("(%d,%d)-(%d,%d) : \"%s\"", rect.left, rect.top, rect.right, rect.bottom, title);
+			cursors.put(hcursor, cursor);
 		}
+		return Collections.unmodifiableMap(cursors);
 	}
 
 	public interface GDI32Extra extends GDI32 {
@@ -184,10 +242,32 @@ public class WindowCapture {
 
 		LRESULT SendMessage(HWND hWnd, int Msg, WPARAM wParam, LPARAM lParam);
 
+		WinNT.HANDLE LoadImageA(WinDef.HINSTANCE hinst, Pointer lpszName, int uType, int cxDesired, int cyDesired,
+				int fuLoad);
+
+		int GetCursorInfo(CURSORINFO cursorinfo);
+
+	}
+
+	@SuppressWarnings("unused")
+	public static class CURSORINFO extends Structure {
+
+		public int cbSize;
+		public int flags;
+		public WinDef.HCURSOR hCursor;
+		public WinDef.POINT ptScreenPos;
+
+		public CURSORINFO() {
+			this.cbSize = Native.getNativeSize(CURSORINFO.class, null);
+		}
+
+		@Override
+		protected List<String> getFieldOrder() {
+			return Arrays.asList("cbSize", "flags", "hCursor", "ptScreenPos");
+		}
 	}
 
 	public interface WinGDIExtra extends WinGDI {
-
 		public DWORD SRCCOPY = new DWORD(0x00CC0020);
 
 	}
@@ -207,5 +287,21 @@ public class WindowCapture {
 		public DWORD flags;
 		public DWORD time;
 		public BaseTSD.ULONG_PTR dwExtraInfo;
+	}
+
+	public enum Cursor {
+		APPSTARTING(32650), NORMAL(32512), CROSS(32515), HAND(32649), HELP(32651), IBEAM(32513), NO(32648),
+		SIZEALL(32646), SIZENESW(32643), SIZENS(32645), SIZENWSE(32642), SIZEWE(32644), UP(32516), WAIT(32514),
+		PEN(32631);
+
+		private final int code;
+
+		Cursor(final int code) {
+			this.code = code;
+		}
+
+		public int getCode() {
+			return code;
+		}
 	}
 }

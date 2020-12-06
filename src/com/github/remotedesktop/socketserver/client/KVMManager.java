@@ -1,12 +1,16 @@
 package com.github.remotedesktop.socketserver.client;
 
 import java.awt.AWTException;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.Robot;
+import java.awt.Shape;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,9 +27,17 @@ public class KVMManager {
 	private short count = 0;
 	private GraphicsEnvironment ge;
 	private GraphicsDevice gd;
-	
-	public KVMManager() throws AWTException {
-		robot = new java.awt.Robot();
+	private int mouseX;
+	private int mouseY;
+	private BufferedImage img;
+
+	public KVMManager() {
+		try {
+			robot = new java.awt.Robot();
+		} catch (AWTException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 		gd = ge.getDefaultScreenDevice();
 		keymap = new HashMap<>();
@@ -177,7 +189,7 @@ public class KVMManager {
 			robot.keyPress(KeyEvent.VK_CONTROL);
 			robot.keyRelease(KeyEvent.VK_CONTROL);
 		}
-		lastInputTime=getTime();
+		lastInputTime = getTime();
 	}
 
 	public static final char[] EXTENDED = { 0xFF, 0xAD, 0x9B, 0x9C, 0x00, 0x9D, 0x00, 0x00, 0x00, 0x00, 0xA6, 0xAE,
@@ -202,13 +214,15 @@ public class KVMManager {
 		}
 
 		robot.keyRelease(KeyEvent.VK_ALT);
-		lastInputTime=getTime();
+		lastInputTime = getTime();
 	}
 
 	public void mouseMove(int x, int y) {
 		if (x > 0 && y > 0) {
+			this.mouseX = x;
+			this.mouseY = y;
 			robot.mouseMove(x, y);
-			lastInputTime=getTime();
+			lastInputTime = getTime();
 		}
 	}
 
@@ -221,7 +235,7 @@ public class KVMManager {
 		if ((buttons & 4) != 0)
 			mask |= InputEvent.BUTTON2_DOWN_MASK;
 		robot.mousePress(mask);
-		lastInputTime=getTime();
+		lastInputTime = getTime();
 	}
 
 	public void mouseRelease(int buttons) {
@@ -233,20 +247,20 @@ public class KVMManager {
 		if ((buttons & 4) != 0)
 			mask |= InputEvent.BUTTON2_DOWN_MASK;
 		robot.mouseRelease(mask);
-		lastInputTime=getTime();
+		lastInputTime = getTime();
 	}
 
 	long getTime() {
 		return System.currentTimeMillis();
 	}
-	
+
 	public BufferedImage captureScreen() {
 		long t = getTime();
 		long t0 = (t - lastInputTime) / 1000;
 		boolean mustKeepAlive = t0 >= TIMEOUT;
 
 		Rectangle screenbound = gd.getDefaultConfiguration().getBounds();
-		BufferedImage img = (cap != null) ? cap.getImage() : robot.createScreenCapture(screenbound);
+		img = (cap != null) ? cap.getImage() : robot.createScreenCapture(screenbound);
 
 		if (mustKeepAlive) {
 			if (count++ % 2 == 0) {
@@ -258,5 +272,12 @@ public class KVMManager {
 		}
 
 		return img;
+	}
+
+	public String getPointer() {
+		if (cap!=null) {
+			return cap.getPointer();
+		}
+		return "default";
 	}
 }

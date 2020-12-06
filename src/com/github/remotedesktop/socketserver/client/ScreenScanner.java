@@ -33,7 +33,7 @@ public class ScreenScanner implements Runnable {
 					throw new IllegalArgumentException("screen size changed");
 				}
 				tileman.processImage(captureScreen, TileManager.MAX_TILE, TileManager.MAX_TILE);
-				notifyObservers();
+				notifyObservers(kvmman.getPointer());
 				Thread.sleep((int) (1000 / Config.fps));
 			} catch (Exception e) {
 				logger.log(Level.SEVERE, "capture screen", e);
@@ -43,7 +43,7 @@ public class ScreenScanner implements Runnable {
 		}
 	}
 
-	private void notifyObservers() {
+	private void notifyObservers(String cursor) {
 		for (int i = 0; i < tileman.getNumXTile(); i++) {
 			for (int j = 0; j < tileman.getNumYTile(); j++) {
 				Tile tile = tileman.getTile(i, j);
@@ -53,7 +53,7 @@ public class ScreenScanner implements Runnable {
 				tileman.getTile(i, j).clearDirty();
 			}
 		}
-		tileobs.updateTileFinish();
+		tileobs.updateTileFinish(cursor);
 	}
 
 	public void startScreenScanning() {
