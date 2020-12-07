@@ -35,34 +35,70 @@ public class CaptureTest {
 
 	@Test
 	public void testBildschirmWirdNichtAusgeschaltet() throws Exception {
+
 		doReturn(TIMEOUT * MS).when(cut).getTime();
 		cut.captureScreen();
 		verify(robot, times(1)).keyPress(KeyEvent.VK_NUM_LOCK);
 		verify(robot, times(0)).keyRelease(KeyEvent.VK_NUM_LOCK);
 
-		doReturn((long) (TIMEOUT * MS * 1.5)).when(cut).getTime();
+		doReturn(TIMEOUT * MS + 2 * MS).when(cut).getTime();
 		cut.captureScreen();
 		verify(robot, times(1)).keyPress(KeyEvent.VK_NUM_LOCK);
-		verify(robot, times(0)).keyRelease(KeyEvent.VK_NUM_LOCK);
+		verify(robot, times(1)).keyRelease(KeyEvent.VK_NUM_LOCK);
+
+		doReturn(TIMEOUT * MS + 3 * MS).when(cut).getTime();
+		cut.captureScreen();
+		verify(robot, times(1)).keyPress(KeyEvent.VK_NUM_LOCK);
+		verify(robot, times(1)).keyRelease(KeyEvent.VK_NUM_LOCK);
+
+		doReturn(TIMEOUT * MS + 4 * MS).when(cut).getTime();
+		cut.captureScreen();
+		verify(robot, times(1)).keyPress(KeyEvent.VK_NUM_LOCK);
+		verify(robot, times(1)).keyRelease(KeyEvent.VK_NUM_LOCK);
 
 		doReturn(TIMEOUT * MS * 2).when(cut).getTime();
 		cut.captureScreen();
 		verify(robot, times(1)).keyPress(KeyEvent.VK_NUM_LOCK);
 		verify(robot, times(1)).keyRelease(KeyEvent.VK_NUM_LOCK);
 
-		doReturn((long) (TIMEOUT * MS * 2.3)).when(cut).getTime();
+		doReturn(TIMEOUT * MS * 2 + 1 * MS).when(cut).getTime();
 		cut.captureScreen();
 		verify(robot, times(1)).keyPress(KeyEvent.VK_NUM_LOCK);
 		verify(robot, times(1)).keyRelease(KeyEvent.VK_NUM_LOCK);
 
-		doReturn(TIMEOUT * MS * 3).when(cut).getTime();
+		doReturn(TIMEOUT * MS * 2 + 2 * MS).when(cut).getTime();
 		cut.captureScreen();
 		verify(robot, times(2)).keyPress(KeyEvent.VK_NUM_LOCK);
 		verify(robot, times(1)).keyRelease(KeyEvent.VK_NUM_LOCK);
 
-		doReturn(TIMEOUT * MS * 4).when(cut).getTime();
+		doReturn(TIMEOUT * MS * 2 + 3 * MS).when(cut).getTime();
+		cut.captureScreen();
+		verify(robot, times(2)).keyPress(KeyEvent.VK_NUM_LOCK);
+		verify(robot, times(1)).keyRelease(KeyEvent.VK_NUM_LOCK);
+
+		doReturn(TIMEOUT * MS * 2 + 4 * MS).when(cut).getTime();
 		cut.captureScreen();
 		verify(robot, times(2)).keyPress(KeyEvent.VK_NUM_LOCK);
 		verify(robot, times(2)).keyRelease(KeyEvent.VK_NUM_LOCK);
+
+		doReturn(TIMEOUT * MS * 3 + 3 * MS).when(cut).getTime();
+		cut.captureScreen();
+		verify(robot, times(2)).keyPress(KeyEvent.VK_NUM_LOCK);
+		verify(robot, times(2)).keyRelease(KeyEvent.VK_NUM_LOCK);
+
+		doReturn(TIMEOUT * MS * 3 + 4 * MS).when(cut).getTime();
+		cut.captureScreen();
+		verify(robot, times(3)).keyPress(KeyEvent.VK_NUM_LOCK);
+		verify(robot, times(2)).keyRelease(KeyEvent.VK_NUM_LOCK);
+
+		doReturn(TIMEOUT * MS * 3 + 5 * MS).when(cut).getTime();
+		cut.captureScreen();
+		verify(robot, times(3)).keyPress(KeyEvent.VK_NUM_LOCK);
+		verify(robot, times(2)).keyRelease(KeyEvent.VK_NUM_LOCK);
+
+		doReturn(TIMEOUT * MS * 3 + 6 * MS).when(cut).getTime();
+		cut.captureScreen();
+		verify(robot, times(3)).keyPress(KeyEvent.VK_NUM_LOCK);
+		verify(robot, times(3)).keyRelease(KeyEvent.VK_NUM_LOCK);
 	}
 }

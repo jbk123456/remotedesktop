@@ -27,9 +27,8 @@ public class KVMManager {
 	private short count = 0;
 	private GraphicsEnvironment ge;
 	private GraphicsDevice gd;
-	private int mouseX;
-	private int mouseY;
 	private BufferedImage img;
+	private boolean numLockOn;
 
 	public KVMManager() {
 		try {
@@ -219,8 +218,6 @@ public class KVMManager {
 
 	public void mouseMove(int x, int y) {
 		if (x > 0 && y > 0) {
-			this.mouseX = x;
-			this.mouseY = y;
 			robot.mouseMove(x, y);
 			lastInputTime = getTime();
 		}
@@ -258,16 +255,18 @@ public class KVMManager {
 		long t = getTime();
 		long t0 = (t - lastInputTime) / 1000;
 		boolean mustKeepAlive = t0 >= TIMEOUT;
+		boolean mustSwitchOffNumlock = t0 >= 2; // must be < 5 to avoid accessibility functions
 
 		Rectangle screenbound = gd.getDefaultConfiguration().getBounds();
 		img = (cap != null) ? cap.getImage() : robot.createScreenCapture(screenbound);
 
-		if (mustKeepAlive) {
-			if (count++ % 2 == 0) {
-				robot.keyPress(KeyEvent.VK_NUM_LOCK); // keep screen on
-			} else {
-				robot.keyRelease(KeyEvent.VK_NUM_LOCK); // keep screen on
-			}
+		if (mustKeepAlive && !numLockOn) {
+			robot.keyPress(KeyEvent.VK_NUM_LOCK); // keep screen on
+			numLockOn = true;
+			lastInputTime = t;
+		} else if (mustSwitchOffNumlock && numLockOn) {
+			robot.keyRelease(KeyEvent.VK_NUM_LOCK); // keep screen on
+			numLockOn = false;
 			lastInputTime = t;
 		}
 
@@ -275,7 +274,7 @@ public class KVMManager {
 	}
 
 	public String getPointer() {
-		if (cap!=null) {
+		if (cap != null) {
 			return cap.getPointer();
 		}
 		return "default";

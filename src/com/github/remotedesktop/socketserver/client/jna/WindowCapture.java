@@ -39,8 +39,10 @@ public class WindowCapture {
 	static final int ES_AWAYMODE_REQUIRED = 0x00000040; // Not supported by Windows XP/Windows Server 2003
 	static final int ES_CONTINUOUS = 0x80000000;
 
-	private final Map<WinNT.HANDLE, Cursor> cursors;
 	private static final Map<String, String> win2Html = getCursorToHtmlMap();
+
+	private final Map<WinNT.HANDLE, Cursor> cursors;
+	private final CURSORINFO cursorinfo = new CURSORINFO();
 
 	public WindowCapture() {
 		HWND hWnd = User32Extra.INSTANCE.GetDesktopWindow();
@@ -88,7 +90,6 @@ public class WindowCapture {
 	}
 
 	private Cursor getCurrentCursor() {
-		final CURSORINFO cursorinfo = new CURSORINFO();
 		final int success = User32Extra.INSTANCE.GetCursorInfo(cursorinfo);
 		if (success != 1) {
 			throw new IllegalArgumentException("getCursorInfo");
@@ -100,6 +101,7 @@ public class WindowCapture {
 		if (cursorinfo.hCursor != null && cursors.containsKey(cursorinfo.hCursor)) {
 			return cursors.get(cursorinfo.hCursor);
 		}
+
 		return null;
 	}
 

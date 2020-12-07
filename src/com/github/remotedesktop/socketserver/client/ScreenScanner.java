@@ -35,7 +35,7 @@ public class ScreenScanner implements Runnable {
 				tileman.processImage(captureScreen, TileManager.MAX_TILE, TileManager.MAX_TILE);
 				notifyObservers(kvmman.getPointer());
 				Thread.sleep((int) (1000 / Config.fps));
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				logger.log(Level.SEVERE, "capture screen", e);
 				tileobs.stop();
 				break;
