@@ -111,7 +111,6 @@ public class Tile {
 
 	public boolean updateImage2(BufferedImage image) {
 		if (this.image == null || !compareImage(this.image, image)) {
-			logger.fine("update image2");
 			stream.reset();
 			writeImageToOutputStream(image, stream);
 			dirty = true;
