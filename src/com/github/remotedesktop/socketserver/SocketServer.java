@@ -24,7 +24,7 @@ public abstract class SocketServer implements Runnable {
 
 	private Object lockObject = new Object();
 	private boolean isFinish = false;
-	
+
 	protected final String id;
 	protected final ByteBuffer buffer;
 	protected Selector selector;
@@ -137,19 +137,26 @@ public abstract class SocketServer implements Runnable {
 
 	@Override
 	public void run() {
-		while (running) {
-			runMainLoop();
+		try {
+			while (running) {
+				runMainLoop();
+			}
+		} catch (Throwable t) {
+			logger.log(Level.SEVERE, "socket server terminated", t);
 		}
-		cleanUp();
-		synchronized(lockObject) {
-			isFinish = true;
-			lockObject.notify();
+		finally {
+			running = false;
+			cleanUp();
+			synchronized (lockObject) {
+				isFinish = true;
+				lockObject.notify();
+			}
 		}
 	}
 
 	public void waitForFinish() throws InterruptedException {
 		synchronized (lockObject) {
-			while(!isFinish) {
+			while (!isFinish) {
 				lockObject.wait();
 			}
 		}

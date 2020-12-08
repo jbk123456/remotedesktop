@@ -24,7 +24,6 @@ public class KVMManager {
 	private WindowCapture cap;
 	private Robot robot;
 	private long lastInputTime = 0;
-	private short count = 0;
 	private GraphicsEnvironment ge;
 	private GraphicsDevice gd;
 	private BufferedImage img;

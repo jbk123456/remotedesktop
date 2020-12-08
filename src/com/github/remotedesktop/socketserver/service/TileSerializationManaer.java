@@ -15,7 +15,10 @@ public class TileSerializationManaer {
 	}
 
 	public void processImage(byte[] image, int x, int y, int w, int h) {
-		getTile(x, y).updateImage2(image, w, h);
+		TileSerializer tile = getTile(x, y);
+		synchronized (tile) {
+			tile.updateImage2(image, w, h);
+		}
 	}
 
 	public TileSerializer getTile(int x, int y) {

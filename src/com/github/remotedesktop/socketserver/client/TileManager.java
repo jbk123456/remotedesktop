@@ -1,8 +1,10 @@
 package com.github.remotedesktop.socketserver.client;
 
 import java.awt.image.BufferedImage;
+import java.util.logging.Logger;
 
 public class TileManager {
+	private static final Logger logger = Logger.getLogger(TileManager.class.getName());
 
 	public static final int MAX_TILE = 5;
 	private Tile tiles[][];
@@ -65,9 +67,12 @@ public class TileManager {
 	}
 
 	public void setDirty() {
+		logger.info("marking all tines as dirty");
 		for (int i = 0; i < numxtile; i++) {
 			for (int j = 0; j < numytile; j++) {
-				tiles[i][j].setDirty();
+				synchronized (tiles[i][j]) {
+					tiles[i][j].setDirty();
+				}
 			}
 		}
 	}

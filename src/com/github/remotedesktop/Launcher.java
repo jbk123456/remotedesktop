@@ -117,7 +117,7 @@ public class Launcher {
 		if (!startAsService) {
 			setupLogger("remotedesktop_displayserver_log.txt");
 			logger.info(
-					"display server started, reporting to http server: " + Config.http_server + ":" + Config.http_port);
+					"Display server started. Locking input. Press BRK key (FN-p) 3 times to terminate. Reporting to http server: " + Config.http_server + ":" + Config.http_port);
 			while (true) {
 				DisplayServer displayServer = new DisplayServer("displayserver", Config.http_server, Config.http_port);
 				displayServer.start();
@@ -136,12 +136,12 @@ public class Launcher {
 	}
 
 	private static void setupLogger(String file) {
-		Logger rootLogger = Logger.getLogger("");
-		Handler[] handlers = rootLogger.getHandlers();
+		Logger logger = Logger.getLogger("");
+		Handler[] handlers = logger.getHandlers();
 		if (handlers[0] instanceof ConsoleHandler) {
-			rootLogger.removeHandler(handlers[0]);
+			logger.removeHandler(handlers[0]);
 		}
-		logger.setLevel(Level.ALL);
+		logger.setLevel(Level.FINE);
 		StreamHandler handler;
 		try {
 			handler = new FileHandler(file);

@@ -8,7 +8,7 @@ public class TileSerializer {
 	private int height;
 
 	public TileSerializer() {
-		dirty = true;
+		dirty = false;
 		width = 0;
 		height = 0;
 		streamData= new byte[0];

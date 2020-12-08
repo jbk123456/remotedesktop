@@ -33,17 +33,13 @@ import com.github.remotedesktop.socketserver.service.TileSerializationManaer;
 import com.github.remotedesktop.socketserver.service.TileSerializer;
 
 public class HttpServer extends SocketServer {
-	private static final String UTF_8 = "UTF-8";
+	private static final Logger logger = Logger.getLogger(HttpServer.class.getName());
 
+	private static final String UTF_8 = "UTF-8";
 
 	private static final Pattern WS_MATCHER = Pattern.compile("Sec-WebSocket-Key: (.*)");
 
-
 	private static final Pattern GET_MATCHER = Pattern.compile("^GET");
-
-
-	private static final Logger logger = Logger.getLogger(HttpServer.class.getName());
-
 
 	public static final String HTTP_OK = "200 OK";
 	public static final String HTTP_NOTFOUND = "404 Not Found";
@@ -117,7 +113,7 @@ public class HttpServer extends SocketServer {
 				}
 				byte[] response = getWebsocketResponse(match);
 				setDataBuffer(key, ByteBuffer.wrap(response));
-				if (getMulticastGroup(key)==null) {
+				if (getMulticastGroup(key) == null) {
 					setDebugContext(key, "websocket request");
 					setMulticastGroup(key, MulticastGroup.RECEIVER);
 					logger.fine("Browser connected: " + key.attachment());
@@ -137,11 +133,11 @@ public class HttpServer extends SocketServer {
 	}
 
 	private byte[] getWebsocketResponse(Matcher match) throws UnsupportedEncodingException, NoSuchAlgorithmException {
-		return ("HTTP/1.1 101 Switching Protocols\r\n" + "Connection: Upgrade\r\n"
-				+ "Upgrade: websocket\r\n" + "Sec-WebSocket-Accept: "
+		return ("HTTP/1.1 101 Switching Protocols\r\n" + "Connection: Upgrade\r\n" + "Upgrade: websocket\r\n"
+				+ "Sec-WebSocket-Accept: "
 				+ Base64.getEncoder()
-						.encodeToString(MessageDigest.getInstance("SHA-1").digest(
-								(match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes(UTF_8)))
+						.encodeToString(MessageDigest.getInstance("SHA-1")
+								.digest((match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes(UTF_8)))
 				+ HEADER_SEPARATOR).getBytes(UTF_8);
 	}
 
@@ -167,7 +163,7 @@ public class HttpServer extends SocketServer {
 			String path = req.getURI().getPath();
 			setDebugContext(key, path);
 			switch (path) {
-			
+
 			case "/tiledoc": { // tiles prrocessed, write back document containing the links to the images
 				StringBuilder sb = new StringBuilder();
 				sb.append("document.getElementById(\"canvas\").style.cursor=\"");
@@ -176,7 +172,8 @@ public class HttpServer extends SocketServer {
 				Random r = new Random(System.currentTimeMillis());
 				for (int i = 0; i < tileman.getNumXTile(); i++) {
 					for (int j = 0; j < tileman.getNumYTile(); j++) {
-						if (tileman.getTile(i, j).isDirty()) {
+						TileSerializer tile = tileman.getTile(i, j);
+						if (tile.isDirty()) {
 							sb.append("document.getElementById('i");
 							sb.append(i + "_" + j);
 							sb.append("').src='getTile?x=");
@@ -190,18 +187,18 @@ public class HttpServer extends SocketServer {
 					}
 				}
 				if (sb.length() > 0) {
-						byte[] getImagesData = websocketProtocolParser.encodeFrame(sb.toString());
-						writeToGroup(MulticastGroup.RECEIVER, ByteBuffer.wrap(getImagesData));
+					byte[] getImagesData = websocketProtocolParser.encodeFrame(sb.toString());
+					writeToGroup(MulticastGroup.RECEIVER, ByteBuffer.wrap(getImagesData));
 				}
 				break;
 			}
-			
-			case "/tile": { // tile prrocessed, 
-				if (getMulticastGroup(key)==null) {
+
+			case "/tile": { // tile prrocessed,
+				if (getMulticastGroup(key) == null) {
 					setMulticastGroup(key, MulticastGroup.SENDER);
 					logger.fine("DisplayServer connected: " + key.attachment());
 				}
-				
+
 				tileman.processImage(req.getData(), Integer.parseInt(req.getParam("x")),
 						Integer.parseInt(req.getParam("y")), Integer.parseInt(req.getParam("w")),
 						Integer.parseInt(req.getParam("h")));
@@ -228,7 +225,8 @@ public class HttpServer extends SocketServer {
 				break;
 			}
 			case "/sendKey": {
-				kvmman.keyStroke(Integer.parseInt(req.getParam("key")),Integer.parseInt(req.getParam("code")), Integer.parseInt(req.getParam("mask")));
+				kvmman.keyStroke(Integer.parseInt(req.getParam("key")), Integer.parseInt(req.getParam("code")),
+						Integer.parseInt(req.getParam("mask")));
 				try {
 					writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
 				} catch (Exception e) {
@@ -268,13 +266,13 @@ public class HttpServer extends SocketServer {
 			case "/getTile": {
 				int x = Integer.parseInt(req.getParam("x"));
 				int y = Integer.parseInt(req.getParam("y"));
+				String mimeType = "image/" + TILEEXT;
 				TileSerializer tile = tileman.getTile(x, y);
 				synchronized (tile) {
-					String mimeType = "image/" + TILEEXT;
-					tile.clearDirty();
 					res.dataStream(HTTP_OK, mimeType, tile.getData());
+					writeTo(key, ByteBuffer.wrap(res.getResponse()));
+					tile.clearDirty();
 				}
-				writeTo(key, ByteBuffer.wrap(res.getResponse()));
 				break;
 			}
 			case "/remotedesktop.html": {
@@ -306,7 +304,7 @@ public class HttpServer extends SocketServer {
 				text = text.replaceFirst("<DYNAMICTEXT>", sb.toString());
 				text = text.replaceFirst("<TIMEOUT>", Integer.toString(500));
 				text = text.replaceAll("<REMOTEDESKTOPHOST>", host);
-				text = text.replaceAll("<REMOTEDESKTOPUPDATEMOUSEDELAY>", String.valueOf((int)(1000/Config.fps)));
+				text = text.replaceAll("<REMOTEDESKTOPUPDATEMOUSEDELAY>", String.valueOf((int) (1000 / Config.fps)));
 				res.message(HTTP_OK, "text/html", text);
 				writeTo(key, ByteBuffer.wrap(res.getResponse()));
 				break;
@@ -334,17 +332,18 @@ public class HttpServer extends SocketServer {
 
 	private byte[] getFileContent(String fn) throws IOException {
 		InputStream in = getClass().getResourceAsStream("/META-INF/resources" + fn);
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			byte[] buf = new byte[8192];
-			for (int c = 0; (c = in.read(buf, c, buf.length - c)) >= 0;) {
-				out.write(buf, 0, c);
-			}
-			return out.toByteArray();
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		byte[] buf = new byte[8192];
+		for (int c = 0; (c = in.read(buf, c, buf.length - c)) >= 0;) {
+			out.write(buf, 0, c);
+		}
+		return out.toByteArray();
 	}
-	  public void cancelKey(SelectionKey key) {
-		  logger.fine("HttpServer: cancel key for: " + key.channel()  + " " +key.attachment());
-	      key.cancel();
-	   }
+
+	public void cancelKey(SelectionKey key) {
+		logger.fine("HttpServer: cancel key for: " + key.channel() + " " + key.attachment());
+		key.cancel();
+	}
 
 	@Override
 	protected void select() throws IOException {

@@ -1,6 +1,7 @@
 package com.github.remotedesktop.socketserver.client;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.awt.image.ImageObserver;
 import java.awt.image.PixelGrabber;
 import java.io.ByteArrayOutputStream;
@@ -24,7 +25,7 @@ public class Tile {
 
 	private static final Logger logger = Logger.getLogger(Tile.class.getName());
 	private ByteArrayOutputStream stream;
-	private Adler32 checksum;
+	private BufferedImage image;
 	private boolean dirty;
 	private int width;
 	private int height;
@@ -40,7 +41,6 @@ public class Tile {
 
 	public Tile() {
 		stream = new ByteArrayOutputStream();
-		checksum = new Adler32();
 		dirty = true;
 		width = 0;
 		height = 0;
@@ -52,9 +52,10 @@ public class Tile {
 		return metadata;
 	}
 
-	private void writeImage(BufferedImage image, OutputStream outs) {
+	private void writeImageToOutputStream(BufferedImage image, OutputStream outs) {
 		ImageWriter imgwriter = null;
 		ImageOutputStream ios = null;
+		this.image = image;
 		try {
 			/* ImageIO.write(image, "JPG", outs); */
 			width = image.getWidth();
@@ -95,13 +96,24 @@ public class Tile {
 		return stream.size();
 	}
 
+	private static boolean compareImage(BufferedImage biA, BufferedImage biB) {
+		DataBuffer dbA = biA.getData().getDataBuffer();
+		DataBuffer dbB = biB.getData().getDataBuffer();
+
+		int sizeA = dbA.getSize();
+		for (int i = 0; i < sizeA; i++) {
+			if (dbA.getElem(i) != dbB.getElem(i)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	public boolean updateImage2(BufferedImage image) {
-		long oldsum;
-		oldsum = checksum.getValue();
-		calcChecksum2(image);
-		if (oldsum != checksum.getValue()) {
+		if (this.image == null || !compareImage(this.image, image)) {
+			logger.fine("update image2");
 			stream.reset();
-			writeImage(image, stream);
+			writeImageToOutputStream(image, stream);
 			dirty = true;
 			return true;
 		} else {
@@ -119,32 +131,6 @@ public class Tile {
 
 	public void setDirty() {
 		dirty = true;
-	}
-
-	private void calcChecksum2(BufferedImage image) {
-		int w = image.getWidth();
-		int h = image.getHeight();
-		int pixels[] = new int[w * h];
-		PixelGrabber pg = new PixelGrabber(image, 0, 0, w, h, pixels, 0, w);
-		checksum.reset();
-		try {
-			pg.grabPixels(1);
-		} catch (InterruptedException e) {
-			logger.info("interrupted waiting for pixels!");
-			return;
-		}
-		if ((pg.getStatus() & ImageObserver.ABORT) != 0) {
-			logger.info("image fetch aborted or errored");
-			return;
-		}
-
-		for (int j = 0; j < h; j++) {
-			for (int i = 0; i < w; i++) {
-				if ((j * w + i) % 13 == 0)
-					checksum.update(pixels[j * w + i]);
-			}
-		}
-
 	}
 
 	public byte[] getData() {

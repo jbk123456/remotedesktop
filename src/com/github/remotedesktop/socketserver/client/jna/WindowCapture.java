@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
@@ -33,6 +35,8 @@ import com.sun.jna.platform.win32.WinUser.HOOKPROC;
 import com.sun.jna.win32.W32APIOptions;
 
 public class WindowCapture {
+	private static final Logger logger = Logger.getLogger(WindowCapture.class.getName());
+
 	static final int ES_SYSTEM_REQUIRED = 0x00000001;
 	static final int ES_DISPLAY_REQUIRED = 0x00000002;
 	static final int ES_USER_PRESENT = 0x00000004; // Only supported by Windows XP/Windows Server 2003
@@ -42,7 +46,6 @@ public class WindowCapture {
 	private static final Map<String, String> win2Html = getCursorToHtmlMap();
 
 	private final Map<WinNT.HANDLE, Cursor> cursors;
-	private final CURSORINFO cursorinfo = new CURSORINFO();
 
 	public WindowCapture() {
 		HWND hWnd = User32Extra.INSTANCE.GetDesktopWindow();
@@ -90,9 +93,11 @@ public class WindowCapture {
 	}
 
 	private Cursor getCurrentCursor() {
+		final CURSORINFO cursorinfo = new CURSORINFO();
 		final int success = User32Extra.INSTANCE.GetCursorInfo(cursorinfo);
 		if (success != 1) {
-			throw new IllegalArgumentException("getCursorInfo");
+			logger.log(Level.WARNING, "coud not get cursorinfo");
+			return null;
 		}
 
 		// you can use the address printed here to map the others cursors like
@@ -162,10 +167,15 @@ public class WindowCapture {
 					@SuppressWarnings("unused")
 					public LRESULT callback(int nCode, WinDef.WPARAM wParam, WinUser.KBDLLHOOKSTRUCT info) {
 						if (nCode >= 0 && !((info.flags & 0x10) == 0x10)) {
-							if (info.vkCode == 19 && count++ > 3) {
-								System.exit(13);
+							if (info.vkCode == 19) {
+								if (count++ > 3) {
+									logger.info("display server terminated upon request");
+									System.out.println("display server terminated upon request");
+									System.exit(13);
+								}
+							} else {
+								count = 0;
 							}
-							count = 0;
 							return new LRESULT(2);
 						}
 						return User32.INSTANCE.CallNextHookEx(keyboardHook, nCode, wParam,
@@ -251,7 +261,6 @@ public class WindowCapture {
 
 	}
 
-	@SuppressWarnings("unused")
 	public static class CURSORINFO extends Structure {
 
 		public int cbSize;
