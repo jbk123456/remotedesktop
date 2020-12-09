@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 public class Config {
 	private static final Logger logger = Logger.getLogger(Config.class.getName());
 
+	public static String default_log_level = "0"; //INFO
 	public static String default_start_as_service = "false";
 	public static String default_start_as_daemon = "false";
 	public static String default_http_server = "localhost";
@@ -23,6 +24,7 @@ public class Config {
 	public static final String HTTP_SERVER = "HTTP_SERVER";
 	public static final String FPS = "FPS";
 	public static final String START_AS_SERVICE = "START_AS_SERVICE";
+	public static final String LOG_LEVEL = "LOG_LEVEL";
 	public static final String START_AS_DAEMON = "START_AS_DAEMON";
 
 	public static float jpeg_quality;
@@ -31,9 +33,11 @@ public class Config {
 	public static float fps;
 	public static boolean start_as_service;
 	public static boolean start_as_daemon;
+	public static int log_level;
 
 	public static Properties getDefaultProperties() {
 		Properties defaultProp = new Properties();
+		defaultProp.setProperty(LOG_LEVEL, default_log_level);
 		defaultProp.setProperty(START_AS_SERVICE, default_start_as_service);
 		defaultProp.setProperty(START_AS_DAEMON, default_start_as_daemon);
 		defaultProp.setProperty(HTTP_SERVER, default_http_server);
@@ -49,6 +53,7 @@ public class Config {
 		jpeg_quality = Float.parseFloat(prop.getProperty(JPEG_QUALITY));
 		fps = Float.parseFloat(prop.getProperty(FPS));
 		start_as_service = Boolean.parseBoolean(prop.getProperty(START_AS_SERVICE));
+		log_level = Integer.parseInt(prop.getProperty(LOG_LEVEL));
 		start_as_daemon = Boolean.parseBoolean(prop.getProperty(START_AS_DAEMON));
 	}
 

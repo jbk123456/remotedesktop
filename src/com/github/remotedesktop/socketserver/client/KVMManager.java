@@ -1,16 +1,12 @@
 package com.github.remotedesktop.socketserver.client;
 
 import java.awt.AWTException;
-import java.awt.Color;
-import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.Robot;
-import java.awt.Shape;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +15,6 @@ import com.github.remotedesktop.socketserver.client.jna.WindowCapture;
 
 public class KVMManager {
 
-	public static final int TIMEOUT = 30;
 	private Map<Integer, Integer> keymap;
 	private WindowCapture cap;
 	private Robot robot;
@@ -27,15 +22,9 @@ public class KVMManager {
 	private GraphicsEnvironment ge;
 	private GraphicsDevice gd;
 	private BufferedImage img;
-	private boolean numLockOn;
 
-	public KVMManager() {
-		try {
-			robot = new java.awt.Robot();
-		} catch (AWTException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+	public KVMManager() throws AWTException {
+		robot = new java.awt.Robot();
 		ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 		gd = ge.getDefaultScreenDevice();
 		keymap = new HashMap<>();
@@ -163,31 +152,39 @@ public class KVMManager {
 			return;
 		}
 		if ((mask & 1) == 1) {
-			robot.keyPress(KeyEvent.VK_SHIFT);
+			keyPress(KeyEvent.VK_SHIFT);
 		} else if ((mask & 2) == 2) {
-			robot.keyPress(KeyEvent.VK_CONTROL);
+			keyPress(KeyEvent.VK_CONTROL);
 		} else if ((mask & 4) == 4) {
-			robot.keyPress(KeyEvent.VK_ALT);
+			keyPress(KeyEvent.VK_ALT);
 		}
-		robot.keyPress(scancode);
-		robot.keyRelease(scancode);
+		keyPress(scancode);
+		keyRelease(scancode);
 		if ((mask & 1) == 1) {
-			robot.keyRelease(KeyEvent.VK_SHIFT);
+			keyRelease(KeyEvent.VK_SHIFT);
 		} else if ((mask & 2) == 2) {
-			robot.keyRelease(KeyEvent.VK_CONTROL);
+			keyRelease(KeyEvent.VK_CONTROL);
 		} else if ((mask & 4) == 4) {
-			robot.keyRelease(KeyEvent.VK_ALT);
+			keyRelease(KeyEvent.VK_ALT);
 		}
 		if (scancode == KeyEvent.VK_ESCAPE) {
 			mouseRelease(7);
-			robot.keyPress(KeyEvent.VK_ALT);
-			robot.keyRelease(KeyEvent.VK_ALT);
-			robot.keyPress(KeyEvent.VK_SHIFT);
-			robot.keyRelease(KeyEvent.VK_SHIFT);
-			robot.keyPress(KeyEvent.VK_CONTROL);
-			robot.keyRelease(KeyEvent.VK_CONTROL);
+			keyPress(KeyEvent.VK_ALT);
+			keyRelease(KeyEvent.VK_ALT);
+			keyPress(KeyEvent.VK_SHIFT);
+			keyRelease(KeyEvent.VK_SHIFT);
+			keyPress(KeyEvent.VK_CONTROL);
+			keyRelease(KeyEvent.VK_CONTROL);
 		}
-		lastInputTime = getTime();
+		setLastInputTime(getTime());
+	}
+
+	public void keyRelease(int scancode) {
+		robot.keyRelease(scancode);
+	}
+
+	public void keyPress(int scancode) {
+		robot.keyPress(scancode);
 	}
 
 	public static final char[] EXTENDED = { 0xFF, 0xAD, 0x9B, 0x9C, 0x00, 0x9D, 0x00, 0x00, 0x00, 0x00, 0xA6, 0xAE,
@@ -203,22 +200,22 @@ public class KVMManager {
 			key = EXTENDED[key - 0xA0];
 		}
 
-		robot.keyPress(KeyEvent.VK_ALT);
+		keyPress(KeyEvent.VK_ALT);
 		String charcode = Integer.toString(key);
 		for (char ascii_c : charcode.toCharArray()) {
 			int ascii_n = Integer.parseInt(String.valueOf(ascii_c)) + 96;
-			robot.keyPress(ascii_n);
-			robot.keyRelease(ascii_n);
+			keyPress(ascii_n);
+			keyRelease(ascii_n);
 		}
 
-		robot.keyRelease(KeyEvent.VK_ALT);
-		lastInputTime = getTime();
+		keyRelease(KeyEvent.VK_ALT);
+		setLastInputTime(getTime());
 	}
 
 	public void mouseMove(int x, int y) {
 		if (x > 0 && y > 0) {
 			robot.mouseMove(x, y);
-			lastInputTime = getTime();
+			setLastInputTime(getTime());
 		}
 	}
 
@@ -231,7 +228,7 @@ public class KVMManager {
 		if ((buttons & 4) != 0)
 			mask |= InputEvent.BUTTON2_DOWN_MASK;
 		robot.mousePress(mask);
-		lastInputTime = getTime();
+		setLastInputTime(getTime());
 	}
 
 	public void mouseRelease(int buttons) {
@@ -243,31 +240,25 @@ public class KVMManager {
 		if ((buttons & 4) != 0)
 			mask |= InputEvent.BUTTON2_DOWN_MASK;
 		robot.mouseRelease(mask);
-		lastInputTime = getTime();
+		setLastInputTime(getTime());
 	}
 
-	long getTime() {
+	public long getTime() {
 		return System.currentTimeMillis();
 	}
 
+	public long getLastInputTime() {
+		return lastInputTime;
+	}
+
+	public void setLastInputTime(long lastInputTime) {
+		this.lastInputTime = lastInputTime;
+	}
+
 	public BufferedImage captureScreen() {
-		long t = getTime();
-		long t0 = (t - lastInputTime) / 1000;
-		boolean mustKeepAlive = t0 >= TIMEOUT;
-		boolean mustSwitchOffNumlock = t0 >= 2; // must be < 5 to avoid accessibility functions
 
 		Rectangle screenbound = gd.getDefaultConfiguration().getBounds();
 		img = (cap != null) ? cap.getImage() : robot.createScreenCapture(screenbound);
-
-		if (mustKeepAlive && !numLockOn) {
-			robot.keyPress(KeyEvent.VK_NUM_LOCK); // keep screen on
-			numLockOn = true;
-			lastInputTime = t;
-		} else if (mustSwitchOffNumlock && numLockOn) {
-			robot.keyRelease(KeyEvent.VK_NUM_LOCK); // keep screen on
-			numLockOn = false;
-			lastInputTime = t;
-		}
 
 		return img;
 	}

@@ -4,7 +4,7 @@ import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
@@ -21,7 +21,8 @@ import com.github.remotedesktop.socketserver.service.http.HttpServer;
 public class Launcher {
 	private static final String PREFIX = "REMOTEDESKTOP_";
 	private static final Logger logger = Logger.getLogger(Launcher.class.getName());
-
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS ");
+    
 	public static void main(String args[]) throws Exception {
 		boolean refreshIni = false;
 		for (int i = 0; i < args.length; i++) {
@@ -30,8 +31,12 @@ public class Launcher {
 						+ "Starts a HTTP Server listening for requests.\r\n"
 						+ "Usage: java -jar remotedesktop.jar --service=false --server=IP --port=6502: "
 						+ "Connects to HTTP Server reading mouse and keyboard data and sending it the current "
-						+ "desktop as a video stream.\r\nOther options: daemon (true/false) host, port, quality (0.0-1.0), fps");
+						+ "desktop as a video stream.\r\nOther options: daemon (true/false) host, port, quality (0.0-1.0), fps, debug (0-3)");
 				System.exit(1);
+			}
+			if (args[i].toLowerCase().startsWith("--debug=")) {
+				Config.default_log_level = args[i].split("=")[1];
+				refreshIni = true;
 			}
 			if (args[i].toLowerCase().startsWith("--service=")) {
 				Config.default_start_as_service = args[i].split("=")[1];
@@ -58,6 +63,10 @@ public class Launcher {
 				Config.default_fps = args[i].split("=")[1];
 				refreshIni = true;
 			}
+		}
+		if (System.getProperty(PREFIX + Config.LOG_LEVEL) != null) {
+			Config.default_log_level = System.getProperty(PREFIX + Config.LOG_LEVEL);
+			refreshIni = true;
 		}
 		if (System.getProperty(PREFIX + Config.START_AS_SERVICE) != null) {
 			Config.default_start_as_service = System.getProperty(PREFIX + Config.START_AS_SERVICE);
@@ -113,11 +122,12 @@ public class Launcher {
 			System.exit(0);
 		}
 
-		boolean startAsService = Config.start_as_service && !GraphicsEnvironment.isHeadless();
+		boolean startAsService = Config.start_as_service || GraphicsEnvironment.isHeadless();
 		if (!startAsService) {
 			setupLogger("remotedesktop_displayserver_log.txt");
 			logger.info(
-					"Display server started. Locking input. Press BRK key (FN-p) 3 times to terminate. Reporting to http server: " + Config.http_server + ":" + Config.http_port);
+					"Display server started. Locking input. Press BRK key (FN-p) 3 times to terminate. Reporting to http server: "
+							+ Config.http_server + ":" + Config.http_port);
 			while (true) {
 				DisplayServer displayServer = new DisplayServer("displayserver", Config.http_server, Config.http_port);
 				displayServer.start();
@@ -141,7 +151,7 @@ public class Launcher {
 		if (handlers[0] instanceof ConsoleHandler) {
 			logger.removeHandler(handlers[0]);
 		}
-		logger.setLevel(Level.FINE);
+		logger.setLevel(getConfigLogLevel());
 		StreamHandler handler;
 		try {
 			handler = new FileHandler(file);
@@ -152,7 +162,7 @@ public class Launcher {
 		SimpleFormatter formatterTxt = new SimpleFormatter() {
 			public String format(LogRecord r) {
 				StringBuilder sb = new StringBuilder();
-				sb.append(MessageFormat.format("{0, date} {0, time} ", new Object[] { new Date(r.getMillis()) }));
+				sb.append(DATE_FORMAT.format(new Date(r.getMillis())));
 				sb.append(r.getSourceClassName()).append(" ");
 				sb.append(r.getSourceMethodName()).append(" ");
 				sb.append(r.getLevel().getName()).append(": ");
@@ -170,5 +180,23 @@ public class Launcher {
 
 		handler.setFormatter(formatterTxt);
 		logger.addHandler(handler);
+	}
+
+	private static Level getConfigLogLevel() {
+		switch (Config.log_level) {
+		default:
+		case 0:
+			return Level.INFO;
+		case 1:
+			return Level.FINE;
+		case 2:
+			return Level.FINER;
+		case 3:
+			return Level.FINEST;
+		case 9:
+			return Level.ALL;
+		case -1:
+			return Level.OFF;
+		}
 	}
 }

@@ -149,7 +149,7 @@ public abstract class SocketServer implements Runnable {
 			cleanUp();
 			synchronized (lockObject) {
 				isFinish = true;
-				lockObject.notify();
+				lockObject.notifyAll();
 			}
 		}
 	}

@@ -2,22 +2,16 @@ package com.github.remotedesktop.socketserver.client;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
-import java.awt.image.ImageObserver;
-import java.awt.image.PixelGrabber;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
-import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.zip.Adler32;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
-import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.stream.ImageOutputStream;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
 
 import com.github.remotedesktop.Config;
 
@@ -46,49 +40,26 @@ public class Tile {
 		height = 0;
 	}
 
-	private IIOMetadata getIIOMetadata(BufferedImage image, ImageWriter imageWriter, ImageWriteParam param) {
-		ImageTypeSpecifier spec = ImageTypeSpecifier.createFromRenderedImage(image);
-		IIOMetadata metadata = imageWriter.getDefaultImageMetadata(spec, param);
-		return metadata;
-	}
-
 	private void writeImageToOutputStream(BufferedImage image, OutputStream outs) {
-		ImageWriter imgwriter = null;
-		ImageOutputStream ios = null;
 		this.image = image;
 		try {
-			/* ImageIO.write(image, "JPG", outs); */
 			width = image.getWidth();
 			height = image.getHeight();
-			ios = ImageIO.createImageOutputStream(outs);
+		
+    	    ImageWriter imageWriter = ImageIO.getImageWritersByFormatName("jpg").next();
+    	    ImageWriteParam param = imageWriter.getDefaultWriteParam();
+    	    param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+			param.setCompressionQuality(Config.jpeg_quality); // an integer between 0 and 1
 
-			// create image writer
-			Iterator<?> iter = ImageIO.getImageWritersByFormatName("jpeg");
-			imgwriter = (ImageWriter) iter.next();
-			ImageWriteParam iwp = imgwriter.getDefaultWriteParam();
-			iwp.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-			iwp.setCompressionQuality(Config.jpeg_quality); // an integer between 0 and 1
+    	    imageWriter.setOutput(new MemoryCacheImageOutputStream(outs));
+		
+    	    IIOImage out = new IIOImage(image, null, null);
+    	    imageWriter.write(null, out, param);
 
-			imgwriter.setOutput(ios);
-			IIOMetadata meta = getIIOMetadata(image, imgwriter, iwp);
-			imgwriter.write(meta, new IIOImage(image, null, meta), iwp);
-			if (ios != null) {
-				ios.flush();
-			}
+    	    imageWriter.dispose();
+
 		} catch (Exception e) {
-			imgwriter.abort();
 			logger.log(Level.SEVERE, "write image", e);
-		} finally {
-			if (ios != null)
-				try {
-					ios.close();
-				} catch (Exception e) {
-					/* ignore */}
-			if (imgwriter != null)
-				try {
-					imgwriter.dispose();
-				} catch (Exception e) {
-					/* ignore */}
 		}
 	}
 

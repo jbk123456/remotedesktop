@@ -14,11 +14,12 @@ public class ScreenScanner implements Runnable {
 	private TileManager tileman;
 	private Tile.Observable tileobs;
 	private Thread runner;
+	private boolean running = true;
 
-	public ScreenScanner(KVMManager kvmman_, TileManager tileman_, Tile.Observable tileobs_) {
-		kvmman = kvmman_;
-		tileman = tileman_;
-		tileobs = tileobs_;
+	public ScreenScanner(KVMManager kvmman, TileManager tileman, Tile.Observable tileobs) {
+		this.kvmman = kvmman;
+		this.tileman = tileman;
+		this.tileobs = tileobs;
 	}
 
 	public void run() {
@@ -26,15 +27,25 @@ public class ScreenScanner implements Runnable {
 		int width = (int) captureScreen.getWidth();
 		int height = (int) captureScreen.getHeight();
 		tileman.setSize(width, height);
-		while (true) {
+		while (running) {
 			try {
+				long t0 = System.currentTimeMillis();
 				captureScreen = kvmman.captureScreen();
 				if (captureScreen.getHeight() != height || captureScreen.getWidth() != width) {
 					throw new IllegalArgumentException("screen size changed");
 				}
+				long tcap = System.currentTimeMillis()-t0;
 				tileman.processImage(captureScreen, TileManager.MAX_TILE, TileManager.MAX_TILE);
+				long tcreat = System.currentTimeMillis()-tcap-t0;
 				notifyObservers(kvmman.getPointer());
-				Thread.sleep((int) (1000 / Config.fps));
+				long t1 = System.currentTimeMillis();
+				long td = t1 - t0;
+				int t = (int) (1000 / Config.fps);
+				long tsleep = t-td;
+				logger.finer(String.format("t: %d, td: %d, tsleep: %d, tcap: %d, tcreat: %d", t, td, tsleep, tcap, tcreat));
+				if (tsleep>0) {
+					Thread.sleep(tsleep);
+				}
 			} catch (Throwable e) {
 				logger.log(Level.SEVERE, "capture screen", e);
 				tileobs.stop();
@@ -58,13 +69,12 @@ public class ScreenScanner implements Runnable {
 
 	public void startScreenScanning() {
 		if (runner == null) {
-			runner = new Thread(this);
+			runner = new Thread(this, getClass().getName());
 			runner.start();
 		}
 	}
-
-	public void startPerformanceTest() {
-		startScreenScanning();
+	public void stop() {
+		running = false;
 	}
 
 }

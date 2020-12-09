@@ -20,15 +20,27 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 	private KVMManager kvmman;
 	private TileManager tileman;
 	private ScreenScanner scanner;
+	private KeepAlive keepalive;
 
 	public DisplayServer(String id, String hostname, int port) throws IOException, AWTException {
 		super(id, hostname, port);
 
 		kvmman = new KVMManager();
 		tileman = new TileManager();
+	
 		scanner = new ScreenScanner(kvmman, tileman, this);
 		scanner.startScreenScanning();
+		
+		keepalive = new KeepAlive(kvmman);
+		keepalive.startKeepAlive();
+		
 		setResponseHandler(this);
+	}
+
+	public void stop() {
+		scanner.stop();
+		keepalive.stop();
+		super.stop();
 	}
 
 	@Override
