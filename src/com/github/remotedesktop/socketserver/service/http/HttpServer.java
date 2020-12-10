@@ -96,7 +96,12 @@ public class HttpServer extends SocketServer {
 		if (websocketData != NO_WEBSOCKET_REQUEST) {
 			data = websocketData;
 		}
-		handle(key, data);
+		try {
+			handle(key, data);
+		} catch(Exception e) {
+			// we shouldn't kill the http server if the client has sent garbage data for example
+			throw new IOException ("httpserver could not create or handle response", e);
+		}
 	}
 
 	private byte[] getWebsocketData(SelectionKey key, byte inputData[]) throws IOException {
@@ -208,30 +213,18 @@ public class HttpServer extends SocketServer {
 
 			case "/ping": {
 				res.message(req.getData());
-				try {
-					writeTo(key, ByteBuffer.wrap(res.getResponse()));
-				} catch (IOException e) {
-					logger.log(Level.SEVERE, "ping", e);
-				}
+				writeTo(key, ByteBuffer.wrap(res.getResponse()));
 				break;
 			}
 			case "/": {
 				res.redirect("/remotedesktop.html");
-				try {
-					writeTo(key, ByteBuffer.wrap(res.getResponse()));
-				} catch (IOException e) {
-					logger.log(Level.SEVERE, "redirect", e);
-				}
+				writeTo(key, ByteBuffer.wrap(res.getResponse()));
 				break;
 			}
 			case "/sendKey": {
 				kvmman.keyStroke(Integer.parseInt(req.getParam("key")), Integer.parseInt(req.getParam("code")),
 						Integer.parseInt(req.getParam("mask")));
-				try {
-					writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
-				} catch (Exception e) {
-					logger.log(Level.SEVERE, "write to group sender", e);
-				}
+				writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
 				break;
 			}
 			case "/sendMouse": {
@@ -255,11 +248,7 @@ public class HttpServer extends SocketServer {
 					kvmman.mouseStroke(button);
 					kvmman.mouseStroke(button);
 				}
-				try {
-					writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
-				} catch (Exception e) {
-					logger.log(Level.SEVERE, "write to group sender", e);
-				}
+				writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
 
 				break;
 			}
