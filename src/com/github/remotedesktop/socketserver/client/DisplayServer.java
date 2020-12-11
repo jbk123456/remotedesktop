@@ -13,7 +13,7 @@ import com.github.remotedesktop.socketserver.service.http.HttpServer;
 import com.github.remotedesktop.socketserver.service.http.Request;
 import com.github.remotedesktop.socketserver.service.http.Response;
 
-public class DisplayServer extends SocketServerClient implements ResponseHandler, Tile.Observable {
+public class DisplayServer extends SocketServerClient implements ResponseHandler, TileOperations {
 
 	private static final Logger logger = Logger.getLogger(DisplayServer.class.getName());
 
@@ -38,6 +38,8 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 	}
 
 	public void stop() {
+		logger.info("display server stop called");
+		tileman.stop();
 		scanner.stop();
 		keepalive.stop();
 		super.stop();

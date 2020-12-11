@@ -63,6 +63,10 @@ public class Launcher {
 				Config.default_fps = args[i].split("=")[1];
 				refreshIni = true;
 			}
+			if (args[i].toLowerCase().startsWith("--threads=")) {
+				Config.default_threads = args[i].split("=")[1];
+				refreshIni = true;
+			}
 		}
 		if (System.getProperty(PREFIX + Config.LOG_LEVEL) != null) {
 			Config.default_log_level = System.getProperty(PREFIX + Config.LOG_LEVEL);
@@ -90,6 +94,10 @@ public class Launcher {
 		}
 		if (System.getProperty(PREFIX + Config.FPS) != null) {
 			Config.default_fps = System.getProperty(PREFIX + Config.FPS);
+			refreshIni = true;
+		}
+		if (System.getProperty(PREFIX + Config.THREADS) != null) {
+			Config.default_threads = System.getProperty(PREFIX + Config.THREADS);
 			refreshIni = true;
 		}
 		Config.load("remotedesktop.ini", refreshIni);

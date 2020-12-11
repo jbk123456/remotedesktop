@@ -12,16 +12,16 @@ public class ScreenScanner implements Runnable {
 
 	private KVMManager kvmman;
 	private TileManager tileman;
-	private Tile.Observable tileobs;
+	private TileOperations tileobs;
 	private Thread runner;
 	private boolean running = true;
 
-	public ScreenScanner(KVMManager kvmman, TileManager tileman, Tile.Observable tileobs) {
+	public ScreenScanner(KVMManager kvmman, TileManager tileman, TileOperations tileobs) {
 		this.kvmman = kvmman;
 		this.tileman = tileman;
 		this.tileobs = tileobs;
 	}
-
+int count = 10;
 	public void run() {
 		BufferedImage captureScreen = kvmman.captureScreen();
 		int width = (int) captureScreen.getWidth();
@@ -52,6 +52,7 @@ public class ScreenScanner implements Runnable {
 				break;
 			}
 		}
+		logger.info("screen scanner stopped");
 	}
 
 	private void notifyObservers(String cursor) {
@@ -74,6 +75,7 @@ public class ScreenScanner implements Runnable {
 		}
 	}
 	public void stop() {
+		logger.info("screen scanner stop called");
 		running = false;
 	}
 

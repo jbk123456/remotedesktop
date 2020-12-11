@@ -14,49 +14,50 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 
 import com.github.remotedesktop.Config;
+import com.github.remotedesktop.ThreadPool;
 
-public class Tile {
+public class Tile implements Runnable {
 
 	private static final Logger logger = Logger.getLogger(Tile.class.getName());
 	private ByteArrayOutputStream stream;
-	private BufferedImage image;
+	private BufferedImage prevImage;
+	private BufferedImage actImage;
 	private boolean dirty;
 	private int width;
 	private int height;
+	private ImageWriter imageWriter;
+	ImageWriteParam param;
+	private Object workerLock = new Object();
+	private boolean isFinish = true;
+	private ThreadPool runner;
 
-	public interface Observable {
-		public void updateTile(int x, int y);
-
-		public void updateTileFinish(String cursor);
-
-		public void stop();
-
-	}
-
-	public Tile() {
+	public Tile(ThreadPool pool) {
+		this.runner = pool;
+		
 		stream = new ByteArrayOutputStream();
-		dirty = true;
+		dirty = false;
 		width = 0;
 		height = 0;
+
+		imageWriter = ImageIO.getImageWritersByFormatName("jpg").next();
+		ImageWriteParam param = imageWriter.getDefaultWriteParam();
+		param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+		param.setCompressionQuality(Config.jpeg_quality); // an integer between 0 and 1
+	
 	}
 
 	private void writeImageToOutputStream(BufferedImage image, OutputStream outs) {
-		this.image = image;
+		this.prevImage = image;
 		try {
 			width = image.getWidth();
 			height = image.getHeight();
-		
-    	    ImageWriter imageWriter = ImageIO.getImageWritersByFormatName("jpg").next();
-    	    ImageWriteParam param = imageWriter.getDefaultWriteParam();
-    	    param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-			param.setCompressionQuality(Config.jpeg_quality); // an integer between 0 and 1
 
-    	    imageWriter.setOutput(new MemoryCacheImageOutputStream(outs));
-		
-    	    IIOImage out = new IIOImage(image, null, null);
-    	    imageWriter.write(null, out, param);
+			imageWriter.setOutput(new MemoryCacheImageOutputStream(outs));
 
-    	    imageWriter.dispose();
+			IIOImage out = new IIOImage(image, null, null);
+			imageWriter.write(null, out, param);
+
+			imageWriter.reset();
 
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, "write image", e);
@@ -65,6 +66,46 @@ public class Tile {
 
 	public int fileSize() {
 		return stream.size();
+	}
+
+	public void updateImage2(BufferedImage image) {
+		synchronized (workerLock) {
+			assert (isFinish);
+
+			isFinish = false;
+			actImage = image;
+			
+			runner.start(this);
+		}
+	}
+
+	public void run() {
+		try {
+			processImage();
+		} catch (Exception e) {
+			logger.log(Level.WARNING, "could not create tile", e);
+		} finally {
+			synchronized (workerLock) {
+				isFinish = true;
+				workerLock.notifyAll();
+			}
+		}
+	}
+
+	public void waitForFinish() throws InterruptedException {
+		synchronized (workerLock) {
+			while (!isFinish) {
+				workerLock.wait();
+			}
+		}
+	}
+
+	private void processImage() {
+		if (prevImage == null || !compareImage(prevImage, actImage)) {
+			stream.reset();
+			writeImageToOutputStream(actImage, stream);
+			dirty = true;
+		}
 	}
 
 	private static boolean compareImage(BufferedImage biA, BufferedImage biB) {
@@ -78,17 +119,6 @@ public class Tile {
 			}
 		}
 		return true;
-	}
-
-	public boolean updateImage2(BufferedImage image) {
-		if (this.image == null || !compareImage(this.image, image)) {
-			stream.reset();
-			writeImageToOutputStream(image, stream);
-			dirty = true;
-			return true;
-		} else {
-			return false;
-		}
 	}
 
 	public boolean isDirty() {

@@ -33,9 +33,10 @@ public class KeepAlive implements Runnable {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				logger.log(Level.SEVERE, "received stop signal");
-				Thread.currentThread().interrupt();
+				stop();
 			}
 		}
+		logger.info("keep alive stopped");
 
 	}
 
@@ -60,6 +61,7 @@ public class KeepAlive implements Runnable {
 	}
 
 	public void stop() {
+		logger.info("keep alive stop called");
 		running = false;
 	}
 

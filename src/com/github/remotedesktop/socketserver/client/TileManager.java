@@ -3,10 +3,16 @@ package com.github.remotedesktop.socketserver.client;
 import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
 
+import com.github.remotedesktop.Config;
+import com.github.remotedesktop.ThreadPool;
+
 public class TileManager {
 	private static final Logger logger = Logger.getLogger(TileManager.class.getName());
 
 	public static final int MAX_TILE = 5;
+
+	private ThreadPool pool = new ThreadPool(getClass().getName(), Config.threads);
+
 	private Tile tiles[][];
 	private int numxtile;
 	private int numytile;
@@ -29,7 +35,7 @@ public class TileManager {
 		tileheight = screenheight / numytile;
 	}
 
-	public void processImage(BufferedImage image, int x, int y) {
+	public void processImage(BufferedImage image, int x, int y) throws InterruptedException {
 		BufferedImage subimage;
 		int subw, subh;
 		numxtile = x;
@@ -37,7 +43,7 @@ public class TileManager {
 		for (int i = 0; i < numxtile; i++) {
 			for (int j = 0; j < numytile; j++) {
 				if (tiles[i][j] == null)
-					tiles[i][j] = new Tile();
+					tiles[i][j] = new Tile(pool);
 				if (i == numxtile - 1)
 					subw = tilewidth + (screenwidth % tilewidth);
 				else
@@ -52,6 +58,15 @@ public class TileManager {
 				}
 			}
 		}
+		for (int i = 0; i < numxtile; i++) {
+			for (int j = 0; j < numytile; j++) {
+				Tile tile = tiles[i][j];
+				synchronized (tile) {
+					tiles[i][j].waitForFinish();
+				}
+			}
+		}
+
 	}
 
 	public Tile getTile(int x, int y) {
@@ -75,5 +90,10 @@ public class TileManager {
 				}
 			}
 		}
+	}
+
+	public void stop() {
+		logger.info("tile manager stop called");
+		pool.destroy();
 	}
 }

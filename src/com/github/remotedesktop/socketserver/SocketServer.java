@@ -22,7 +22,8 @@ public abstract class SocketServer implements Runnable {
 
 	public static final int BUFFER_SIZE = 1 * 1024 * 1024;
 
-	private Object lockObject = new Object();
+	private Object waitForFinishLock = new Object();
+	private Object stopLock = new Object();
 	private boolean isFinish = false;
 
 	protected final String id;
@@ -30,7 +31,7 @@ public abstract class SocketServer implements Runnable {
 	protected Selector selector;
 	protected AbstractSelectableChannel channel;
 	protected final InetSocketAddress address;
-	private volatile boolean running;
+	private volatile boolean running = true;
 
 	protected enum MulticastGroup {
 		SENDER, RECEIVER;
@@ -126,13 +127,17 @@ public abstract class SocketServer implements Runnable {
 	}
 
 	public void start() {
-		Thread executionThread = new Thread(this, id);
-		running = true;
-		executionThread.start();
+		new Thread(this, id).start();
 	}
 
 	public void stop() {
-		running = false;
+		synchronized (stopLock) {
+			if (running) {
+				logger.info("socket server stop called");
+				running = false;
+				cleanUp();
+			}
+		}
 	}
 
 	@Override
@@ -145,19 +150,21 @@ public abstract class SocketServer implements Runnable {
 			logger.log(Level.SEVERE, "socket server terminated", t);
 		}
 		finally {
+			logger.info("stopping socket server");
 			running = false;
 			cleanUp();
-			synchronized (lockObject) {
+			synchronized (waitForFinishLock) {
+				logger.info("stopped socket server");
 				isFinish = true;
-				lockObject.notifyAll();
+				waitForFinishLock.notifyAll();
 			}
 		}
 	}
 
 	public void waitForFinish() throws InterruptedException {
-		synchronized (lockObject) {
+		synchronized (waitForFinishLock) {
 			while (!isFinish) {
-				lockObject.wait();
+				waitForFinishLock.wait();
 			}
 		}
 	}
@@ -176,7 +183,7 @@ public abstract class SocketServer implements Runnable {
 			Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
 			// logger.debug("main oop key length:::" + selector.keys().size());
 
-			while (iterator.hasNext()) {
+			while (running && iterator.hasNext()) {
 				SelectionKey key = iterator.next();
 				try {
 					iterator.remove();
