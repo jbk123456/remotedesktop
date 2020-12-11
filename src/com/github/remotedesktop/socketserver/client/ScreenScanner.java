@@ -21,7 +21,7 @@ public class ScreenScanner implements Runnable {
 		this.tileman = tileman;
 		this.tileobs = tileobs;
 	}
-int count = 10;
+
 	public void run() {
 		BufferedImage captureScreen = kvmman.captureScreen();
 		int width = (int) captureScreen.getWidth();

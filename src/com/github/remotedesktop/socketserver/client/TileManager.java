@@ -62,7 +62,7 @@ public class TileManager {
 			for (int j = 0; j < numytile; j++) {
 				Tile tile = tiles[i][j];
 				synchronized (tile) {
-					tiles[i][j].waitForFinish();
+					tile.waitForFinish();
 				}
 			}
 		}
