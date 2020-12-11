@@ -12,7 +12,6 @@ public class ThreadPool {
 	private int threads;
 	private int idles;
 	private int poolMaxSize;
-	private int poolReserve;
 
 	private LinkedList<Runnable> runnables = new LinkedList<>();
 	private List<Delegate> delegates = new LinkedList<>();
@@ -81,10 +80,6 @@ public class ThreadPool {
 		d.start();
 	}
 
-	protected synchronized boolean checkReserve() {
-		return threads - idles < poolReserve;
-	}
-
 	/*
 	 * Helper: Pull a runnable off the list of runnables. If there's no work, sleep
 	 * the thread until we receive a notify.
@@ -117,7 +112,6 @@ public class ThreadPool {
 	protected void init(String name, int poolMaxSize) {
 		this.name = name;
 		this.poolMaxSize = poolMaxSize;
-		this.poolReserve = (poolMaxSize >>> 2) * 3;
 	}
 
 	/**
