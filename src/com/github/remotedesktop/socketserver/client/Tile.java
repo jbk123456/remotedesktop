@@ -49,6 +49,7 @@ public class Tile implements Runnable {
 	public void updateQuality(float quality) {
 		synchronized (param) {
 			param.setCompressionQuality(quality);
+			logger.fine(String.format("set compression quality to %f", quality));
 		}
 	}
 	

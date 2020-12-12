@@ -20,6 +20,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
@@ -223,7 +224,7 @@ public class HttpServer extends SocketServer {
 				break;
 			}
 			case "/": {
-				res.redirect(String.format("/remotedesktop.html?quality=%f&fps=%f", Config.jpeg_quality, Config.fps));
+				res.redirect(String.format(Locale.US, "/remotedesktop.html?quality=%.2f&fps=%d", Config.jpeg_quality, (int)Config.fps));
 				writeTo(key, ByteBuffer.wrap(res.getResponse()));
 				break;
 			}
@@ -273,6 +274,7 @@ public class HttpServer extends SocketServer {
 			case "/remotedesktop.html": {
 				updateConfig("quality", req.getParam("quality"));
 				updateConfig("fps", req.getParam("fps"));
+				writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
 
 				StringBuffer sb = new StringBuffer();
 				String host = req.getHeader("host");
