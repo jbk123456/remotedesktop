@@ -40,7 +40,7 @@ public class Tile implements Runnable {
 		height = 0;
 
 		imageWriter = ImageIO.getImageWritersByFormatName("jpg").next();
-		ImageWriteParam param = imageWriter.getDefaultWriteParam();
+		param = imageWriter.getDefaultWriteParam();
 		param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 		param.setCompressionQuality(Config.jpeg_quality); // an integer between 0 and 1
 	

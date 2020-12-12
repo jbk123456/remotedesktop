@@ -16,6 +16,7 @@ public class Config {
 	public static String default_http_port = "6502";
 	public static String default_jpeg_quality = "0.5";
 	public static String default_fps = "8.0";
+	public static String default_lock = "false";
 	public static String default_threads = "8";
 
 	private static Properties prop;
@@ -24,6 +25,7 @@ public class Config {
 	public static final String HTTP_PORT = "HTTP_PORT";
 	public static final String HTTP_SERVER = "HTTP_SERVER";
 	public static final String FPS = "FPS";
+	public static final String LOCK = "LOCK";
 	public static final String THREADS = "THREADS";
 	public static final String START_AS_SERVICE = "START_AS_SERVICE";
 	public static final String LOG_LEVEL = "LOG_LEVEL";
@@ -33,6 +35,7 @@ public class Config {
 	public static int http_port;
 	public static String http_server;
 	public static float fps;
+	public static boolean lock;
 	public static int threads;
 	public static boolean start_as_service;
 	public static boolean start_as_daemon;
@@ -47,6 +50,7 @@ public class Config {
 		defaultProp.setProperty(HTTP_PORT, default_http_port);
 		defaultProp.setProperty(JPEG_QUALITY, default_jpeg_quality);
 		defaultProp.setProperty(FPS, default_fps);
+		defaultProp.setProperty(LOCK, default_lock);
 		defaultProp.setProperty(THREADS, default_threads);
 		return defaultProp;
 	}
@@ -56,6 +60,7 @@ public class Config {
 		http_port = Integer.parseInt(prop.getProperty(HTTP_PORT));
 		jpeg_quality = Float.parseFloat(prop.getProperty(JPEG_QUALITY));
 		fps = Float.parseFloat(prop.getProperty(FPS));
+		lock = Boolean.parseBoolean(prop.getProperty(LOCK));
 		threads = Integer.parseInt(prop.getProperty(THREADS));
 		start_as_service = Boolean.parseBoolean(prop.getProperty(START_AS_SERVICE));
 		log_level = Integer.parseInt(prop.getProperty(LOG_LEVEL));

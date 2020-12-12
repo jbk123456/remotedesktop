@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.github.remotedesktop.Config;
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
@@ -51,7 +52,9 @@ public class WindowCapture {
 		HWND hWnd = User32Extra.INSTANCE.GetDesktopWindow();
 		RECT r = new RECT();
 		User32.INSTANCE.GetWindowRect(hWnd, r);
-		discardLocalInput();
+		if (Config.lock) { 
+			discardLocalInput();
+		}
 		cursors = loadCursors();
 
 	}
