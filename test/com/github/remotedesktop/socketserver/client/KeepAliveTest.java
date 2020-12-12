@@ -24,8 +24,7 @@ public class KeepAliveTest {
 
 	@Mock
 	private Robot robot;
-	
-	
+
 	@InjectMocks
 	private KVMManager kvmman = spy(getKVMManager());
 
@@ -105,7 +104,7 @@ public class KeepAliveTest {
 		verify(robot, times(4)).keyPress(KeyEvent.VK_NUM_LOCK);
 		verify(robot, times(3)).keyRelease(KeyEvent.VK_NUM_LOCK);
 		doReturn(TIMEOUT * MS * 4 + 8 * MS).when(kvmman).getTime();
-		
+
 		cut.sendKeepAlive();
 		verify(robot, times(4)).keyPress(KeyEvent.VK_NUM_LOCK);
 		verify(robot, times(4)).keyRelease(KeyEvent.VK_NUM_LOCK);
@@ -113,7 +112,7 @@ public class KeepAliveTest {
 
 	private KVMManager getKVMManager() {
 		try {
-			return new KVMManager();
+			return KVMManager.getInstance();
 		} catch (AWTException e) {
 			return null;
 		}

@@ -65,4 +65,14 @@ public class KeyboardAndMouseSerializer {
 		mouseRelease(buttons);
 	}
 
+	public void updateConfig(String key, String val) {
+		b.append(command);
+		b.append("u?");
+		b.append("k=");
+		b.append(key);
+		b.append("&v=");
+		b.append(val);
+		b.append(separator);
+	}
+
 }

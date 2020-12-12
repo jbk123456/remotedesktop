@@ -15,11 +15,13 @@ public class ScreenScanner implements Runnable {
 	private TileOperations tileobs;
 	private Thread runner;
 	private boolean running = true;
-
+	private float fps;
+	
 	public ScreenScanner(KVMManager kvmman, TileManager tileman, TileOperations tileobs) {
 		this.kvmman = kvmman;
 		this.tileman = tileman;
 		this.tileobs = tileobs;
+		fps = Config.fps;
 	}
 
 	public void run() {
@@ -40,7 +42,7 @@ public class ScreenScanner implements Runnable {
 				notifyObservers(kvmman.getPointer());
 				long t1 = System.currentTimeMillis();
 				long td = t1 - t0;
-				int t = (int) (1000 / Config.fps);
+				int t = (int) (1000 / fps);
 				long tsleep = t-td;
 				logger.finer(String.format("t: %d, td: %d, tsleep: %d, tcap: %d, tcreat: %d", t, td, tsleep, tcap, tcreat));
 				if (tsleep>0) {
@@ -77,6 +79,10 @@ public class ScreenScanner implements Runnable {
 	public void stop() {
 		logger.info("screen scanner stop called");
 		running = false;
+	}
+
+	public void updateFps(float fps) {
+		this.fps = fps;
 	}
 
 }

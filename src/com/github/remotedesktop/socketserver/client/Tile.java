@@ -46,6 +46,12 @@ public class Tile implements Runnable {
 	
 	}
 
+	public void updateQuality(float quality) {
+		synchronized (param) {
+			param.setCompressionQuality(quality);
+		}
+	}
+	
 	private void writeImageToOutputStream(BufferedImage image, OutputStream outs) {
 		this.prevImage = image;
 		try {
@@ -55,8 +61,11 @@ public class Tile implements Runnable {
 			imageWriter.setOutput(new MemoryCacheImageOutputStream(outs));
 
 			IIOImage out = new IIOImage(image, null, null);
-			imageWriter.write(null, out, param);
 
+			synchronized(param) {
+				imageWriter.write(null, out, param);
+			}
+			
 			imageWriter.reset();
 
 		} catch (Exception e) {

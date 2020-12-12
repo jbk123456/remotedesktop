@@ -19,6 +19,8 @@ import java.nio.channels.spi.SelectorProvider;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.logging.Logger;
@@ -54,12 +56,16 @@ public class HttpServer extends SocketServer {
 	private final TileSerializationManaer tileman;
 	private final KeyboardAndMouseSerializer kvmman;
 	private final WebSocketEncoderDecoder websocketProtocolParser;
+	private final Map<String, String> updateableConfigs = new HashMap<>();
 
 	public HttpServer(String hostname, int port) throws IOException {
 		super("HttpServer", hostname, port);
 		kvmman = new KeyboardAndMouseSerializer(GET_CMD, HEADER_SEPARATOR);
 		tileman = new TileSerializationManaer();
 		websocketProtocolParser = new WebSocketEncoderDecoder();
+
+		updateableConfigs.put("quality", String.valueOf(Config.jpeg_quality));
+		updateableConfigs.put("fps", String.valueOf(Config.fps));
 	}
 
 	public int getPort() throws IOException {
@@ -97,9 +103,10 @@ public class HttpServer extends SocketServer {
 		}
 		try {
 			handle(key, data);
-		} catch(Exception e) {
-			// we shouldn't kill the http server if the client has sent garbage data for example
-			throw new IOException ("httpserver could not create or handle response", e);
+		} catch (Exception e) {
+			// we shouldn't kill the http server if the client has sent garbage data for
+			// example
+			throw new IOException("httpserver could not create or handle response", e);
 		}
 	}
 
@@ -216,7 +223,7 @@ public class HttpServer extends SocketServer {
 				break;
 			}
 			case "/": {
-				res.redirect("/remotedesktop.html");
+				res.redirect(String.format("/remotedesktop.html?quality=%f&fps=%f", Config.jpeg_quality, Config.fps));
 				writeTo(key, ByteBuffer.wrap(res.getResponse()));
 				break;
 			}
@@ -264,6 +271,9 @@ public class HttpServer extends SocketServer {
 				break;
 			}
 			case "/remotedesktop.html": {
+				updateConfig("quality", req.getParam("quality"));
+				updateConfig("fps", req.getParam("fps"));
+
 				StringBuffer sb = new StringBuffer();
 				String host = req.getHeader("host");
 				sb.append("<table cellspacing='0' cellpadding='0'>");
@@ -316,6 +326,14 @@ public class HttpServer extends SocketServer {
 			}
 			}
 		} while (remaining > 0);
+	}
+
+	private void updateConfig(String key, String val) {
+		if (val != null && !val.equals(updateableConfigs.get(key))) {
+			updateableConfigs.put(key, val);
+			kvmman.updateConfig(key, val);
+
+		}
 	}
 
 	private byte[] getFileContent(String fn) throws IOException {

@@ -81,6 +81,17 @@ public class TileManager {
 		return numytile;
 	}
 
+	public void updateQuality(float quality) {
+		for (int i = 0; i < numxtile; i++) {
+			for (int j = 0; j < numytile; j++) {
+				Tile tile = tiles[i][j];
+				synchronized (tile) {
+					tile.updateQuality(quality);
+				}
+			}
+		}
+	}
+
 	public void setDirty() {
 		logger.info("marking all tines as dirty");
 		for (int i = 0; i < numxtile; i++) {

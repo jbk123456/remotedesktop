@@ -25,7 +25,7 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 	public DisplayServer(String id, String hostname, int port) throws IOException, AWTException {
 		super(id, hostname, port);
 
-		kvmman = new KVMManager();
+		kvmman = KVMManager.getInstance();
 		tileman = new TileManager();
 	
 		scanner = new ScreenScanner(kvmman, tileman, this);
@@ -136,11 +136,29 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 			kvmman.mouseRelease(Integer.parseInt(req.getParam("v")));
 			break;
 		}
+		case "/u": {
+			updateConfig(req.getParam("k"), req.getParam("v"));
+			break;
+		}
 		default: {
 			res.exception(HttpServer.HTTP_NOTFOUND, path + " not found");
 			break;
 		}
 
+		}
+	}
+
+	private void updateConfig(String key, String value) {
+		switch(key) {
+		case "fps": 
+			float fps = Float.parseFloat(value); 
+			scanner.updateFps(fps);
+			break;
+		case "quality":
+			float quality = Float.parseFloat(value);
+			tileman.updateQuality(quality);
+			break;
+		default: throw new IllegalArgumentException(key);
 		}
 	}
 }

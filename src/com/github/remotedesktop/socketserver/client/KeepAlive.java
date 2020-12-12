@@ -1,6 +1,5 @@
 package com.github.remotedesktop.socketserver.client;
 
-import java.awt.event.KeyEvent;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,13 +46,11 @@ public class KeepAlive implements Runnable {
 		boolean mustSwitchOffNumlock = t0 >= 2; // must be < 5 to avoid accessibility functions
 
 		if (mustKeepAlive && !numLockOn) {
-			logger.finer("keep alive: numlock set");
-			kvmman.keyPress(KeyEvent.VK_NUM_LOCK); // keep screen on
+			kvmman.keepScreenOn(true);
 			numLockOn = true;
 			kvmman.setLastInputTime(t);
 		} else if (mustSwitchOffNumlock && numLockOn) {
-			logger.finer("keep alive: numlock reset");
-			kvmman.keyRelease(KeyEvent.VK_NUM_LOCK); // keep screen on
+			kvmman.keepScreenOn(false);
 			numLockOn = false;
 			kvmman.setLastInputTime(t);
 		}

@@ -4,38 +4,141 @@ import java.awt.AWTException;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
-import java.awt.Robot;
-import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.github.remotedesktop.socketserver.client.jna.WindowCapture;
-
-public class KVMManager {
+public abstract class KVMManager {
 
 	private Map<Integer, Integer> keymap;
-	private WindowCapture cap;
-	private Robot robot;
 	private long lastInputTime = 0;
 	private GraphicsEnvironment ge;
-	private GraphicsDevice gd;
-	private BufferedImage img;
+	protected GraphicsDevice gd;
 
-	public KVMManager() throws AWTException {
-		robot = new java.awt.Robot();
+	public static final KVMManager getInstance() throws AWTException {
+		try {
+			return new KVMManagerWindows();
+		} catch (Throwable e) {
+			return new KVMManagerJava();
+		}
+	}
+
+	protected KVMManager() throws AWTException {
 		ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 		gd = ge.getDefaultScreenDevice();
 		keymap = new HashMap<>();
 		assignKeyMap();
-		robot.setAutoWaitForIdle(true);
+	}
 
-		try {
-			cap = new WindowCapture();
-		} catch (Throwable e) {
-			// ignore
+	protected int convAscii(int ascii) {
+		Integer scancode;
+		scancode = (Integer) keymap.get(new Integer(ascii));
+		if (scancode == null)
+			return -1;
+		else
+			return scancode.intValue();
+	}
+
+	public void keyStroke(int key, int keycode, int mask) {
+		if (keycode == 0) {
+			return; // ignore composite keys. We might use e.code, but that would be difficult
 		}
+
+		int scancode = convAscii(keycode);
+		if (scancode < 0) {
+			if (scancode < -1) {
+				return;
+			}
+			askiiKeyStrokeViaAltNumpad(key, mask);
+			return;
+		}
+		if ((mask & 1) == 1) {
+			sendKeyPress(KeyEvent.VK_SHIFT);
+		} else if ((mask & 2) == 2) {
+			sendKeyPress(KeyEvent.VK_CONTROL);
+		} else if ((mask & 4) == 4) {
+			sendKeyPress(KeyEvent.VK_ALT);
+		}
+		sendKeyPress(scancode);
+		sendKeyRelease(scancode);
+		if ((mask & 1) == 1) {
+			sendKeyRelease(KeyEvent.VK_SHIFT);
+		} else if ((mask & 2) == 2) {
+			sendKeyRelease(KeyEvent.VK_CONTROL);
+		} else if ((mask & 4) == 4) {
+			sendKeyRelease(KeyEvent.VK_ALT);
+		}
+		if (scancode == KeyEvent.VK_ESCAPE) {
+			mouseRelease(7);
+			sendKeyPress(KeyEvent.VK_ALT);
+			sendKeyRelease(KeyEvent.VK_ALT);
+			sendKeyPress(KeyEvent.VK_SHIFT);
+			sendKeyRelease(KeyEvent.VK_SHIFT);
+			sendKeyPress(KeyEvent.VK_CONTROL);
+			sendKeyRelease(KeyEvent.VK_CONTROL);
+		}
+		setLastInputTime(getTime());
+	}
+
+	public static final char[] EXTENDED = { 0xFF, 0xAD, 0x9B, 0x9C, 0x00, 0x9D, 0x00, 0x00, 0x00, 0x00, 0xA6, 0xAE,
+			0xAA, 0x00, 0x00, 0x00, 0xF8, 0xF1, 0xFD, 0x00, 0x00, 0xE6, 0x00, 0xFA, 0x00, 0x00, 0xA7, 0xAF, 0xAC, 0xAB,
+			0x00, 0xA8, 0x00, 0x00, 0x00, 0x00, 0x8E, 0x8F, 0x92, 0x80, 0x00, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0xA5, 0x00, 0x00, 0x00, 0x00, 0x99, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9A, 0x00, 0x00, 0xE1, 0x85, 0xA0,
+			0x83, 0x00, 0x84, 0x86, 0x91, 0x87, 0x8A, 0x82, 0x88, 0x89, 0x8D, 0xA1, 0x8C, 0x8B, 0x00, 0xA4, 0x95, 0xA2,
+			0x93, 0x00, 0x94, 0xF6, 0x00, 0x97, 0xA3, 0x96, 0x81, 0x00, 0x00, 0x98 };
+
+	private void askiiKeyStrokeViaAltNumpad(int key, int mask) {
+
+		if (key >= 0xA0 && key <= 0xFF && EXTENDED[key - 0xA0] > 0) {
+			key = EXTENDED[key - 0xA0];
+		}
+
+		sendKeyPress(KeyEvent.VK_ALT);
+		String charcode = Integer.toString(key);
+		for (char ascii_c : charcode.toCharArray()) {
+			int ascii_n = Integer.parseInt(String.valueOf(ascii_c)) + 96;
+			sendKeyPress(ascii_n);
+			sendKeyRelease(ascii_n);
+		}
+
+		sendKeyRelease(KeyEvent.VK_ALT);
+		setLastInputTime(getTime());
+	}
+
+	protected void mouseMove(int x, int y) {
+		if (x > 0 && y > 0) {
+			sendMouseMove(x, y);
+			setLastInputTime(getTime());
+		}
+	}
+
+	public void mousePress(int buttons) {
+
+		sendMousePress(buttons);
+		setLastInputTime(getTime());
+	}
+
+	public void mouseRelease(int buttons) {
+		sendMouseRelease(buttons);
+		setLastInputTime(getTime());
+	}
+
+	public long getTime() {
+		return System.currentTimeMillis();
+	}
+
+	public long getLastInputTime() {
+		return lastInputTime;
+	}
+
+	public void setLastInputTime(long lastInputTime) {
+		this.lastInputTime = lastInputTime;
+	}
+
+	public BufferedImage captureScreen() {
+		Rectangle screenbound = gd.getDefaultConfiguration().getBounds();
+		return createScreenCapture(screenbound);
 	}
 
 	private void assignKeyMap() {
@@ -129,144 +232,20 @@ public class KVMManager {
 		keymap.put(new Integer(46), new Integer(KeyEvent.VK_DELETE)); // Del
 	}
 
-	private int convAscii(int ascii) {
-		Integer scancode;
-		scancode = (Integer) keymap.get(new Integer(ascii));
-		if (scancode == null)
-			return -1;
-		else
-			return scancode.intValue();
-	}
+	protected abstract void sendKeyPress(int vkAlt);
 
-	public void keyStroke(int key, int keycode, int mask) {
-		if (keycode == 0) {
-			return; // ignore composite keys. We might use e.code, but that would be difficult
-		}
+	protected abstract void sendKeyRelease(int vkAlt);
 
-		int scancode = convAscii(keycode);
-		if (scancode < 0) {
-			if (scancode < -1) {
-				return;
-			}
-			askiiKeyStrokeViaAltNumpad(key, mask);
-			return;
-		}
-		if ((mask & 1) == 1) {
-			keyPress(KeyEvent.VK_SHIFT);
-		} else if ((mask & 2) == 2) {
-			keyPress(KeyEvent.VK_CONTROL);
-		} else if ((mask & 4) == 4) {
-			keyPress(KeyEvent.VK_ALT);
-		}
-		keyPress(scancode);
-		keyRelease(scancode);
-		if ((mask & 1) == 1) {
-			keyRelease(KeyEvent.VK_SHIFT);
-		} else if ((mask & 2) == 2) {
-			keyRelease(KeyEvent.VK_CONTROL);
-		} else if ((mask & 4) == 4) {
-			keyRelease(KeyEvent.VK_ALT);
-		}
-		if (scancode == KeyEvent.VK_ESCAPE) {
-			mouseRelease(7);
-			keyPress(KeyEvent.VK_ALT);
-			keyRelease(KeyEvent.VK_ALT);
-			keyPress(KeyEvent.VK_SHIFT);
-			keyRelease(KeyEvent.VK_SHIFT);
-			keyPress(KeyEvent.VK_CONTROL);
-			keyRelease(KeyEvent.VK_CONTROL);
-		}
-		setLastInputTime(getTime());
-	}
+	protected abstract void sendMouseMove(int x, int y);
 
-	public void keyRelease(int scancode) {
-		robot.keyRelease(scancode);
-	}
+	protected abstract void sendMousePress(int buttons);
 
-	public void keyPress(int scancode) {
-		robot.keyPress(scancode);
-	}
+	protected abstract void sendMouseRelease(int buttons);
 
-	public static final char[] EXTENDED = { 0xFF, 0xAD, 0x9B, 0x9C, 0x00, 0x9D, 0x00, 0x00, 0x00, 0x00, 0xA6, 0xAE,
-			0xAA, 0x00, 0x00, 0x00, 0xF8, 0xF1, 0xFD, 0x00, 0x00, 0xE6, 0x00, 0xFA, 0x00, 0x00, 0xA7, 0xAF, 0xAC, 0xAB,
-			0x00, 0xA8, 0x00, 0x00, 0x00, 0x00, 0x8E, 0x8F, 0x92, 0x80, 0x00, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0xA5, 0x00, 0x00, 0x00, 0x00, 0x99, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9A, 0x00, 0x00, 0xE1, 0x85, 0xA0,
-			0x83, 0x00, 0x84, 0x86, 0x91, 0x87, 0x8A, 0x82, 0x88, 0x89, 0x8D, 0xA1, 0x8C, 0x8B, 0x00, 0xA4, 0x95, 0xA2,
-			0x93, 0x00, 0x94, 0xF6, 0x00, 0x97, 0xA3, 0x96, 0x81, 0x00, 0x00, 0x98 };
+	protected abstract BufferedImage createScreenCapture(Rectangle screenbound);
 
-	private void askiiKeyStrokeViaAltNumpad(int key, int mask) {
+	public abstract String getPointer();
 
-		if (key >= 0xA0 && key <= 0xFF && EXTENDED[key - 0xA0] > 0) {
-			key = EXTENDED[key - 0xA0];
-		}
+	public abstract void keepScreenOn(boolean toggle);
 
-		keyPress(KeyEvent.VK_ALT);
-		String charcode = Integer.toString(key);
-		for (char ascii_c : charcode.toCharArray()) {
-			int ascii_n = Integer.parseInt(String.valueOf(ascii_c)) + 96;
-			keyPress(ascii_n);
-			keyRelease(ascii_n);
-		}
-
-		keyRelease(KeyEvent.VK_ALT);
-		setLastInputTime(getTime());
-	}
-
-	public void mouseMove(int x, int y) {
-		if (x > 0 && y > 0) {
-			robot.mouseMove(x, y);
-			setLastInputTime(getTime());
-		}
-	}
-
-	public void mousePress(int buttons) {
-		int mask = 0;
-		if ((buttons & 1) != 0)
-			mask |= InputEvent.BUTTON1_DOWN_MASK;
-		if ((buttons & 2) != 0)
-			mask |= InputEvent.BUTTON3_DOWN_MASK;
-		if ((buttons & 4) != 0)
-			mask |= InputEvent.BUTTON2_DOWN_MASK;
-		robot.mousePress(mask);
-		setLastInputTime(getTime());
-	}
-
-	public void mouseRelease(int buttons) {
-		int mask = 0;
-		if ((buttons & 1) != 0)
-			mask |= InputEvent.BUTTON1_DOWN_MASK;
-		if ((buttons & 2) != 0)
-			mask |= InputEvent.BUTTON3_DOWN_MASK;
-		if ((buttons & 4) != 0)
-			mask |= InputEvent.BUTTON2_DOWN_MASK;
-		robot.mouseRelease(mask);
-		setLastInputTime(getTime());
-	}
-
-	public long getTime() {
-		return System.currentTimeMillis();
-	}
-
-	public long getLastInputTime() {
-		return lastInputTime;
-	}
-
-	public void setLastInputTime(long lastInputTime) {
-		this.lastInputTime = lastInputTime;
-	}
-
-	public BufferedImage captureScreen() {
-
-		Rectangle screenbound = gd.getDefaultConfiguration().getBounds();
-		img = (cap != null) ? cap.getImage() : robot.createScreenCapture(screenbound);
-
-		return img;
-	}
-
-	public String getPointer() {
-		if (cap != null) {
-			return cap.getPointer();
-		}
-		return "default";
-	}
 }

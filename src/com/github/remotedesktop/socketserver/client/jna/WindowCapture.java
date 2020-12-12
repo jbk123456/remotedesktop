@@ -318,4 +318,9 @@ public class WindowCapture {
 			return code;
 		}
 	}
+
+	public void keepScreenOn(boolean toggle) {
+		Kernel32.INSTANCE.SetThreadExecutionState(ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED | ES_CONTINUOUS);
+		logger.finer("keep windows screen on");
+	}
 }
