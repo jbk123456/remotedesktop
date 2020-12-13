@@ -45,7 +45,7 @@ public class HttpClientIntegrationTest {
 	public void cleanUp() throws Exception {
 		displayServerClient.stop();
 		httpBrowserClient.stop();
-		if (httpBrowserClient2!=null) {
+		if (httpBrowserClient2 != null) {
 			httpBrowserClient2.stop();
 		}
 		server.stop();
@@ -53,6 +53,7 @@ public class HttpClientIntegrationTest {
 
 	@Test(timeout = 2000)
 	public void sendTiles_expect_WebServerConstructsTiledoc() throws Exception {
+
 		server = new HttpServer("localhost", 0);
 		server.start();
 		int port = server.getPort();
@@ -62,8 +63,7 @@ public class HttpClientIntegrationTest {
 		final CountDownLatch latch = new CountDownLatch(4);
 		final CountDownLatch browserLatch = new CountDownLatch(2);
 
-		displayServerClient = new SocketServerClient("client one", address, port);
-		displayServerClient.setResponseHandler(new ResponseHandler() {
+		displayServerClient = new HttpClientTestAdapter("displayServerClient", address, port, new ResponseHandler() {
 
 			@Override
 			public void onMessage(SelectionKey key, byte[] message) throws IOException {
@@ -71,7 +71,8 @@ public class HttpClientIntegrationTest {
 			}
 		});
 		displayServerClient.start();
-		httpBrowserClient = new HttpClientTestAdapter("client two", address, port, new ResponseHandler() {
+
+		httpBrowserClient = new HttpClientTestAdapter("httpBrowserClient", address, port, new ResponseHandler() {
 			@Override
 			public void onMessage(SelectionKey key, byte[] message) {
 				results.add(message);
@@ -318,5 +319,4 @@ public class HttpClientIntegrationTest {
 	private void browserFetchImage(int x, int y) throws IOException {
 		httpBrowserClient.sendMessage(encoder.encodeFrame("GET /getTile?x=" + x + "&y=" + y + "\r\n\r\n"));
 	}
-
 }

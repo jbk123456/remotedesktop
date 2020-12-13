@@ -1,5 +1,10 @@
 package com.github.remotedesktop.socketserver.service.http;
 
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.addWriteBuffer;
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.getMulticastGroup;
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.setDebugContext;
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.setMulticastGroup;
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.setPushBackBuffer;
 import static java.lang.System.arraycopy;
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 
@@ -30,6 +35,7 @@ import java.util.regex.Pattern;
 
 import com.github.remotedesktop.Config;
 import com.github.remotedesktop.socketserver.SocketServer;
+import com.github.remotedesktop.socketserver.SocketServerMulticastGroup;
 import com.github.remotedesktop.socketserver.service.KeyboardAndMouseSerializer;
 import com.github.remotedesktop.socketserver.service.TileSerializationManaer;
 import com.github.remotedesktop.socketserver.service.TileSerializer;
@@ -105,6 +111,7 @@ public class HttpServer extends SocketServer {
 		try {
 			handle(key, data);
 		} catch (Exception e) {
+			e.printStackTrace();
 			// we shouldn't kill the http server if the client has sent garbage data for
 			// example
 			throw new IOException("httpserver could not create or handle response", e);
@@ -124,15 +131,15 @@ public class HttpServer extends SocketServer {
 					return NO_WEBSOCKET_REQUEST;
 				}
 				byte[] response = getWebsocketResponse(match);
-				setDataBuffer(key, ByteBuffer.wrap(response));
+				addWriteBuffer(key, ByteBuffer.wrap(response));
 				if (getMulticastGroup(key) == null) {
 					setDebugContext(key, "websocket request");
-					setMulticastGroup(key, MulticastGroup.RECEIVER);
+					setMulticastGroup(key, SocketServerMulticastGroup.RECEIVER);
 					logger.fine("Browser connected: " + key.attachment());
 				}
 				write(key);
 				return null;
-			} else if (getMulticastGroup(key) == MulticastGroup.RECEIVER) {
+			} else if (getMulticastGroup(key) == SocketServerMulticastGroup.RECEIVER) {
 				return websocketProtocolParser.decodeFrames(inputData);
 			}
 		} catch (NoSuchAlgorithmException e) {
@@ -167,8 +174,8 @@ public class HttpServer extends SocketServer {
 			req = new Request(key);
 			remaining = req.parse(data);
 			if (remaining < 0) {
-				assert (getMulticastGroup(key) != MulticastGroup.RECEIVER);
-				setDataBuffer(key, ByteBuffer.wrap(data));
+				assert (getMulticastGroup(key) != SocketServerMulticastGroup.RECEIVER);
+				setPushBackBuffer(key, ByteBuffer.wrap(data));
 				return; // partial read, get the rest
 			}
 			Response res = new Response();
@@ -200,14 +207,14 @@ public class HttpServer extends SocketServer {
 				}
 				if (sb.length() > 0) {
 					byte[] getImagesData = websocketProtocolParser.encodeFrame(sb.toString());
-					writeToGroup(MulticastGroup.RECEIVER, ByteBuffer.wrap(getImagesData));
+					writeToGroup(SocketServerMulticastGroup.RECEIVER, ByteBuffer.wrap(getImagesData));
 				}
 				break;
 			}
 
 			case "/tile": { // tile prrocessed,
 				if (getMulticastGroup(key) == null) {
-					setMulticastGroup(key, MulticastGroup.SENDER);
+					setMulticastGroup(key, SocketServerMulticastGroup.SENDER);
 					logger.fine("DisplayServer connected: " + key.attachment());
 				}
 
@@ -224,14 +231,15 @@ public class HttpServer extends SocketServer {
 				break;
 			}
 			case "/": {
-				res.redirect(String.format(Locale.US, "/remotedesktop.html?quality=%.2f&fps=%d", Config.jpeg_quality, (int)Config.fps));
+				res.redirect(String.format(Locale.US, "/remotedesktop.html?quality=%.2f&fps=%d", Config.jpeg_quality,
+						(int) Config.fps));
 				writeTo(key, ByteBuffer.wrap(res.getResponse()));
 				break;
 			}
 			case "/sendKey": {
 				kvmman.keyStroke(Integer.parseInt(req.getParam("key")), Integer.parseInt(req.getParam("code")),
 						Integer.parseInt(req.getParam("mask")));
-				writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
+				writeToGroup(SocketServerMulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
 				break;
 			}
 			case "/sendMouse": {
@@ -255,7 +263,7 @@ public class HttpServer extends SocketServer {
 					kvmman.mouseStroke(button);
 					kvmman.mouseStroke(button);
 				}
-				writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
+				writeToGroup(SocketServerMulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
 
 				break;
 			}
@@ -274,7 +282,7 @@ public class HttpServer extends SocketServer {
 			case "/remotedesktop.html": {
 				updateConfig("quality", req.getParam("quality"));
 				updateConfig("fps", req.getParam("fps"));
-				writeToGroup(MulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
+				writeToGroup(SocketServerMulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
 
 				StringBuffer sb = new StringBuffer();
 				String host = req.getHeader("host");
@@ -353,8 +361,4 @@ public class HttpServer extends SocketServer {
 		key.cancel();
 	}
 
-	@Override
-	protected void select() throws IOException {
-		selector.select();
-	}
 }

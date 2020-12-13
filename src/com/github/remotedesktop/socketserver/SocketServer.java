@@ -1,7 +1,13 @@
 package com.github.remotedesktop.socketserver;
 
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.getWriteBuffer;
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.getMulticastGroup;
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.getPushBackBuffer;
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.addWriteBuffer;
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.setPushBackBuffer;
 import static java.lang.System.arraycopy;
 import static java.nio.channels.SelectionKey.OP_READ;
+import static java.nio.channels.SelectionKey.OP_WRITE;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -20,36 +26,18 @@ import java.util.logging.Logger;
 public abstract class SocketServer implements Runnable {
 	private static final Logger logger = Logger.getLogger(SocketServer.class.getName());
 
-	public static final int BUFFER_SIZE = 1 * 1024 * 1024;
+	public static final int BUFFER_SIZE = 65535; // 8 * buffer cache size
 
 	private Object waitForFinishLock = new Object();
 	private Object stopLock = new Object();
 	private boolean isFinish = false;
+	private boolean running = true;
 
 	protected final String id;
-	protected final ByteBuffer buffer;
+	protected final ByteBuffer incomingBuffer;
 	protected Selector selector;
 	protected AbstractSelectableChannel channel;
 	protected final InetSocketAddress address;
-	private volatile boolean running = true;
-
-	protected enum MulticastGroup {
-		SENDER, RECEIVER;
-	}
-
-	private class Attachment {
-		public MulticastGroup role;
-//		public byte[] debugData;
-		public ByteBuffer data;
-		public String context;
-
-		public String toString() {
-			return "role: " + String.valueOf(role) + ", context: " + String.valueOf(context) + ", data: "
-					+ new String(data == null ? new byte[0] : data.array())
-//					+" debugData: " + new String(debugData)
-			;
-		}
-	}
 
 	public SocketServer(String id, String addr, int port) throws IOException {
 		this(id, addr == null ? new InetSocketAddress(port) : new InetSocketAddress(InetAddress.getByName(addr), port));
@@ -58,73 +46,21 @@ public abstract class SocketServer implements Runnable {
 	public SocketServer(String id, InetSocketAddress address) throws IOException {
 		this.id = id;
 		this.address = address;
-		this.buffer = ByteBuffer.allocate(BUFFER_SIZE);
+		this.incomingBuffer = ByteBuffer.allocate(getRecvBufferSize());
 		this.channel = channel(address);
 		this.selector = selector();
 	}
 
-	protected abstract AbstractSelectableChannel channel(InetSocketAddress address) throws IOException;
-
-	protected abstract void handleIncomingData(SelectionKey sender, byte[] data) throws IOException;
-
-	protected abstract Selector openSelector() throws IOException;
-
-	protected abstract SelectionKey channelRegister(Selector selector) throws IOException;
-
-	protected abstract void select() throws IOException;
-
-	protected abstract void cancelKey(SelectionKey key);
-
 	private final Selector selector() throws IOException {
 		Selector selector = openSelector();
-		registerKeyForAttachments(channelRegister(selector));
+		enableAttachments(channelRegister(selector));
 		return selector;
 	}
 
-	private void registerKeyForAttachments(SelectionKey key) {
-		key.attach(new Attachment());
+	private void enableAttachments(SelectionKey key) {
+		key.attach(new SocketServerAttachment());
 	}
 
-	protected void write(SelectionKey key) throws IOException {
-		ByteBuffer buffer = getDataBuffer(key);
-		setDataBuffer(key, null);
-
-		SocketChannel channel = (SocketChannel) key.channel();
-		assert (buffer != null);
-
-		while (buffer.hasRemaining()) {
-			channel.write(buffer);
-		}
-		key.interestOps(OP_READ);
-	}
-
-	protected void writeTo(SelectionKey key, ByteBuffer buffer) throws IOException {
-		setDataBuffer(key, buffer);
-		write(key);
-	}
-
-	protected void writeToGroup(MulticastGroup role, ByteBuffer buffer) throws IOException {
-		int clients = 0;
-		buffer.mark();
-		for (SelectionKey key : selector.keys()) {
-			if (role == ((Attachment) (key.attachment())).role) {
-				buffer.reset();
-				SocketChannel channel = (SocketChannel) key.channel();
-				clients++;
-				try {
-					while (buffer.hasRemaining()) {
-						channel.write(buffer);
-					}
-				} catch (IOException e) {
-					// do not let the exception escape to top-level
-					cancelKey(key);
-				}
-			}
-		}
-		if (clients == 0) {
-			logger.fine("write to group: " + role + " nobody cares");
-		}
-	}
 
 	public void start() {
 		new Thread(this, id).start();
@@ -148,8 +84,7 @@ public abstract class SocketServer implements Runnable {
 			}
 		} catch (Throwable t) {
 			logger.log(Level.SEVERE, "socket server terminated", t);
-		}
-		finally {
+		} finally {
 			logger.info("stopping socket server");
 			running = false;
 			cleanUp();
@@ -176,36 +111,13 @@ public abstract class SocketServer implements Runnable {
 		close(selector);
 	}
 
+	protected int getRecvBufferSize() {
+		return BUFFER_SIZE;
+	}
+	
 	private void runMainLoop() {
 		try {
 			select();
-
-			Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-			// logger.debug("main oop key length:::" + selector.keys().size());
-
-			while (running && iterator.hasNext()) {
-				SelectionKey key = iterator.next();
-				try {
-					iterator.remove();
-
-					if (!key.isValid()) {
-						continue;
-					}
-
-					if (key.isConnectable()) {
-						connect(key);
-					} else if (key.isAcceptable()) {
-						accept(key);
-					} else if (key.isReadable()) {
-						read(key);
-					} else if (key.isWritable()) {
-						write(key);
-					}
-				} catch (IOException e) {
-					logger.log(Level.SEVERE, "select", e);
-					cancelKey(key);
-				}
-			}
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, "socket server terminated", e);
 			try {
@@ -224,11 +136,41 @@ public abstract class SocketServer implements Runnable {
 		}
 	}
 
+	private void select() throws IOException {
+		selector.select();
+
+		Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+
+		while (running && iterator.hasNext()) {
+			SelectionKey key = iterator.next();
+			try {
+				iterator.remove();
+
+				if (!key.isValid()) {
+					continue;
+				}
+
+				if (key.isConnectable()) {
+					connect(key);
+				} else if (key.isAcceptable()) {
+					accept(key);
+				} else if (key.isReadable()) {
+					read(key);
+				} else if (key.isWritable()) {
+					write(key);
+				}
+			} catch (IOException e) {
+				logger.log(Level.SEVERE, "select", e);
+				cancelKey(key);
+			}
+		}
+	}
+
 	protected void accept(SelectionKey key) throws IOException {
 		ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
 		SocketChannel socketChannel = serverSocketChannel.accept();
 		socketChannel.configureBlocking(false);
-		registerKeyForAttachments(socketChannel.register(selector, OP_READ));
+		enableAttachments(socketChannel.register(selector, OP_READ));
 	}
 
 	protected void connect(SelectionKey key) throws IOException {
@@ -238,74 +180,105 @@ public abstract class SocketServer implements Runnable {
 			logger.fine("not yet connected");
 		}
 		channel.configureBlocking(false);
-		registerKeyForAttachments(channel.register(selector, OP_READ));
+		enableAttachments(channel.register(selector, OP_READ));
 	}
 
-	protected void read(SelectionKey key) throws IOException {
-		SocketChannel channel = (SocketChannel) key.channel();
-		buffer.clear();
+	protected final void read(SelectionKey key) throws IOException {
+		byte[] data;
 		int c = 0;
+		SocketChannel channel = (SocketChannel) key.channel();
+		incomingBuffer.clear();
 
 		do {
-			c = channel.read(buffer);
+			c = channel.read(incomingBuffer);
 		} while (c > 0);
 
+		logger.finest(String.format("read %d bytes", incomingBuffer.position()));
+		
 		if (c == -1) {
+			logger.log(Level.WARNING, "cannot read data, connection lost");
 			throw new IOException("disconnected");
 		}
-		int count = buffer.position();
+		int count = incomingBuffer.position();
 		if (count == 0) {
+			logger.fine("could not read data yet, sleeping...");
+			key.interestOps(OP_READ);
 			return; // short read, try again
 		}
-		byte[] data;
-		ByteBuffer remainBuffer = getDataBuffer(key);
-		setDataBuffer(key, null);
+
+		ByteBuffer remainBuffer = getPushBackBuffer(key);
+		setPushBackBuffer(key, null);
 
 		if (remainBuffer != null) {
+			logger.finest(String.format("merge %d bytes from back buffer", remainBuffer.capacity()));
 			count += remainBuffer.capacity();
+			logger.finest(String.format("total bytes read: %d", count));
 			data = new byte[count];
 			arraycopy(remainBuffer.array(), 0, data, 0, remainBuffer.capacity());
-			arraycopy(buffer.array(), 0, data, remainBuffer.capacity(), buffer.position());
+			arraycopy(incomingBuffer.array(), 0, data, remainBuffer.capacity(), incomingBuffer.position());
 		} else {
 			data = new byte[count];
-			arraycopy(buffer.array(), 0, data, 0, buffer.position());
+			arraycopy(incomingBuffer.array(), 0, data, 0, incomingBuffer.position());
 		}
+
 		handleIncomingData(key, data);
+
+		key.interestOps(OP_READ);
 	}
 
-	protected ByteBuffer getDataBuffer(SelectionKey key) {
-		return ((Attachment) key.attachment()).data;
+	protected final void write(SelectionKey key) throws IOException {
+		ByteBuffer buffer;
+
+		while ((buffer = getWriteBuffer(key).peek()) != null) {
+			SocketChannel channel = (SocketChannel) key.channel();
+
+			while (buffer.hasRemaining()) {
+
+				logger.finest(String.format("about to write %d bytes", buffer.remaining()));
+				int count = channel.write(buffer);
+				logger.finest(String.format("wrote %d bytes", count));
+				
+				if (count==-1) {
+					throw new IOException("short write");
+				}
+				if (count == 0) {
+					logger.finest("could not write yet, sleeping...");
+					key.interestOps(OP_WRITE);
+					return;
+				}
+			}
+			getWriteBuffer(key).removeFirst();
+		}
+		key.interestOps(OP_READ);
 	}
 
-	protected void setDataBuffer(SelectionKey key, ByteBuffer data) {
-		((Attachment) key.attachment()).data = data;
+	protected final void writeToGroup(SocketServerMulticastGroup role, ByteBuffer buffer) {
+		int clients = 0;
+		for (SelectionKey key : selector.keys()) {
+			if (role == getMulticastGroup(key)) {
+				addWriteBuffer(key, buffer.duplicate());
+				clients++;
+				try {
+					write(key);
+				} catch (IOException e) {
+					logger.log(Level.WARNING, "write to group", e);
+					// do not let the exception escape to top-level
+					// as this would cancel the wrong key
+					cancelKey(key);
+				}
+			}
+		}
+		if (clients == 0) {
+			logger.finer("write to group: " + role + " nobody cares");
+		}
 	}
 
-	protected MulticastGroup getMulticastGroup(SelectionKey key) {
-		return ((Attachment) key.attachment()).role;
+	protected final void writeTo(SelectionKey key, ByteBuffer buffer) throws IOException {
+		addWriteBuffer(key, buffer);
+		write(key);
 	}
 
-	protected void setMulticastGroup(SelectionKey key, MulticastGroup role) {
-		((Attachment) key.attachment()).role = role;
-	}
-
-	protected String getContext(SelectionKey key) {
-		return ((Attachment) key.attachment()).context;
-	}
-
-	protected void setDebugContext(SelectionKey key, String context) {
-		((Attachment) key.attachment()).context = context;
-	}
-
-//	protected byte[] getDebugDatat(SelectionKey key) {
-//		return ((Attachment) key.attachment()).debugData;
-//	}
-//
-//	protected void setDebugDatat(SelectionKey key, byte[] data) {
-//		((Attachment) key.attachment()).debugData = data;
-//	}
-
-	protected void close(Closeable... closeables) {
+	protected final void close(Closeable... closeables) {
 		try {
 			for (Closeable closeable : closeables)
 				closeable.close();
@@ -313,4 +286,15 @@ public abstract class SocketServer implements Runnable {
 			//
 		}
 	}
+
+	protected abstract AbstractSelectableChannel channel(InetSocketAddress address) throws IOException;
+
+	protected abstract SelectionKey channelRegister(Selector selector) throws IOException;
+
+	protected abstract void handleIncomingData(SelectionKey sender, byte[] data) throws IOException;
+
+	protected abstract Selector openSelector() throws IOException;
+
+	protected abstract void cancelKey(SelectionKey key);
+
 }

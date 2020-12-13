@@ -1,7 +1,7 @@
 package com.github.remotedesktop.socketserver;
 
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.addWriteBuffer;
 import static java.nio.channels.SelectionKey.OP_CONNECT;
-import static java.nio.channels.SelectionKey.OP_READ;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -10,18 +10,14 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
-import java.util.LinkedList;
 import java.util.logging.Logger;
 
 public class SocketServerClient extends SocketServer {
 	private static final Logger logger = Logger.getLogger(SocketServerClient.class.getName());
-	private ResponseHandler handler;
-	private final LinkedList<ByteBuffer> messages;
-
+	protected ResponseHandler handler;
 
 	public SocketServerClient(String id, String hostname, int port) throws IOException {
 		super(id, new InetSocketAddress(hostname, port));
-		this.messages = new LinkedList<>();
 	}
 
 	public void setResponseHandler(ResponseHandler handler) {
@@ -51,47 +47,24 @@ public class SocketServerClient extends SocketServer {
 		handler.onMessage(sender, data);
 	}
 
-	@Override
-	protected void select() throws IOException {
-//		selector.select(timeout);
-		selector.select();
-	}
-
-	@Override
-	protected void write(SelectionKey key) throws IOException {
-		SocketChannel channel = (SocketChannel) key.channel();
-		while (!messages.isEmpty()) {
-			ByteBuffer message = messages.poll();
-			while (message.hasRemaining()) {
-				channel.write(message);
-			}
-		}
-		key.interestOps(OP_READ);
-	}
-
 	public void writeToServerBuffer(ByteBuffer buffer) {
-		messages.add(buffer);
+		SelectionKey key = channel.keyFor(selector);
+		addWriteBuffer(key, buffer);
 	}
 
-	public boolean writeToServer(ByteBuffer buffer) throws IOException {
-		messages.add(buffer);
+	public void writeToServer(ByteBuffer buffer) throws IOException {
 		SelectionKey key = channel.keyFor(selector);
 
-		if (key == null || !key.isValid()) { // force reconnect
-			close(selector);
-			return false;
-		}
-
+		addWriteBuffer(key, buffer);
 		write(key);
-		return true;	}
+	}
 
 	@Override
 	protected void cancelKey(SelectionKey key) {
-		  logger.fine("HttpClient: cancel key for: " + key.channel()  + " " +key.attachment());
+		logger.fine("HttpClient: cancel key for: " + key.channel() + " " + key.attachment());
 
 		key.cancel();
 		close(key.channel());
 		throw new IllegalStateException("lost connection to server: " + key.attachment()); // try again
 	}
-
 }

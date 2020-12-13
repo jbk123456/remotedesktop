@@ -1,5 +1,6 @@
 package com.github.remotedesktop;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -118,7 +119,8 @@ public class ThreadPool {
 	 * Terminate all threads in the pool.
 	 */
 	public void destroy() {
-		for (Delegate d : delegates) {
+		for (Iterator<Delegate> ii = delegates.iterator(); ii.hasNext();) {
+			Delegate d = ii.next();
 			d.terminate = true;
 			d.interrupt();
 		}

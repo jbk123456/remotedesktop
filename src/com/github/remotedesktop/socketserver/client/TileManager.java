@@ -11,7 +11,7 @@ public class TileManager {
 
 	public static final int MAX_TILE = 5;
 
-	private ThreadPool pool = new ThreadPool(getClass().getName(), Config.threads);
+	private ThreadPool pool;
 
 	private Tile tiles[][];
 	private int numxtile;
@@ -103,8 +103,15 @@ public class TileManager {
 		}
 	}
 
+	public void startRenderPool() {
+		logger.info("tile manager start called");
+		pool = new ThreadPool(getClass().getName(), Config.threads);
+	}
+
 	public void stop() {
 		logger.info("tile manager stop called");
-		pool.destroy();
+		if (pool != null) { // may happen if startRenderPool() wasn't called
+			pool.destroy();
+		}
 	}
 }

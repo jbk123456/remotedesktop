@@ -147,7 +147,7 @@ public class Launcher {
 							+ Config.http_server + ":" + Config.http_port);
 			while (true) {
 				DisplayServer displayServer = new DisplayServer("displayserver", Config.http_server, Config.http_port);
-				displayServer.start();
+				displayServer.startDisplayServer(); 
 				displayServer.waitForFinish();
 				logger.info("restarting displayserver");
 			}

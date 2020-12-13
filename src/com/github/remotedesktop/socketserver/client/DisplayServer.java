@@ -1,5 +1,9 @@
 package com.github.remotedesktop.socketserver.client;
 
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.setDebugContext;
+import static com.github.remotedesktop.socketserver.SocketServerAttachment.setPushBackBuffer;
+import static java.nio.channels.SelectionKey.OP_READ;
+
 import java.awt.AWTException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,14 +31,18 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 
 		kvmman = KVMManager.getInstance();
 		tileman = new TileManager();
-	
 		scanner = new ScreenScanner(kvmman, tileman, this);
-		scanner.startScreenScanning();
-		
 		keepalive = new KeepAlive(kvmman);
-		keepalive.startKeepAlive();
-		
+
 		setResponseHandler(this);
+	}
+
+	public void startDisplayServer() {
+		logger.info("display server start called");
+		tileman.startRenderPool();
+		scanner.startScreenScanning();
+		keepalive.startKeepAlive();
+		super.start();
 	}
 
 	public void stop() {
@@ -68,20 +76,17 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 		System.arraycopy(tile.getData(), 0, data, req.length, tile.getData().length);
 		writeToServerBuffer(ByteBuffer.wrap(data));
 	}
+
 	@Override
 	public void updateTileFinish(String cursor) {
 		StringBuilder b = new StringBuilder("GET /tiledoc?cursor=");
 		b.append(cursor);
 		b.append("\r\n\r\n");
 		byte[] req = b.toString().getBytes();
-		
-		boolean written = false;
+
 		try {
-			written = writeToServer(ByteBuffer.wrap(req));
-		} catch (Exception e) {
-			written = false;
-		}
-		if (!written) {
+			writeToServer(ByteBuffer.wrap(req));
+		} catch (IOException e) {
 			tileman.setDirty();
 		}
 	}
@@ -101,7 +106,9 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 			req = new Request(key);
 			remaining = req.parse(data);
 			if (remaining < 0) {
-				setDataBuffer(key, ByteBuffer.wrap(data));
+				logger.fine("could not read data yet, sleeping...");
+				setPushBackBuffer(key, ByteBuffer.wrap(data));
+				key.interestOps(OP_READ);
 				return; // partial read, get the rest
 			}
 			Response res = new Response();
@@ -111,6 +118,7 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 				handle(req, res);
 			} catch (IOException e) {
 				logger.log(Level.SEVERE, "on message", e);
+				cancelKey(key);
 			}
 		} while (remaining > 0);
 
@@ -121,7 +129,8 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 
 		switch (path) {
 		case "/k": {
-			kvmman.keyStroke(Integer.parseInt(req.getParam("k")), Integer.parseInt(req.getParam("v")), Integer.parseInt(req.getParam("mask")));
+			kvmman.keyStroke(Integer.parseInt(req.getParam("k")), Integer.parseInt(req.getParam("v")),
+					Integer.parseInt(req.getParam("mask")));
 			break;
 		}
 		case "/m": {
@@ -149,16 +158,17 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 	}
 
 	private void updateConfig(String key, String value) {
-		switch(key) {
-		case "fps": 
-			float fps = Float.parseFloat(value); 
+		switch (key) {
+		case "fps":
+			float fps = Float.parseFloat(value);
 			scanner.updateFps(fps);
 			break;
 		case "quality":
 			float quality = Float.parseFloat(value);
 			tileman.updateQuality(quality);
 			break;
-		default: throw new IllegalArgumentException(key);
+		default:
+			throw new IllegalArgumentException(key);
 		}
 	}
 }

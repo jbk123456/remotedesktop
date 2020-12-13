@@ -5,21 +5,34 @@ import static org.junit.Assert.assertNotEquals;
 
 import java.nio.channels.SelectionKey;
 import java.util.concurrent.CountDownLatch;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import com.github.remotedesktop.socketserver.ResponseHandler;
+import com.github.remotedesktop.socketserver.SocketServer;
 import com.github.remotedesktop.socketserver.service.http.HttpServer;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class HttpServerIntegrationTest {
 
+	protected static final int SMALL_RECV_BUFFER = 3; // nur 3 bytes gemeinsam durch die Leitung quälen
+	protected static final int LARGE_RECV_BUFFER = 1000000;
+
 	private String address = "localhost";
 	private HttpServer server;
 	private HttpClientTestAdapter httpBrowserClient;
+
+	@Before
+	public void setUp() throws Exception {
+		setupLogger();
+	}
 
 	@After
 	public void cleanUp() throws Exception {
@@ -67,10 +80,29 @@ public class HttpServerIntegrationTest {
 
 	}
 
-	@Test(timeout = 10000)
-	public void canHandleConcatenatedMessages() throws Exception {
+	@Ignore // too slow!
+	@Test(timeout = 300000)
+	public void canHandleConcatenatedMessagesSmallBuffer() throws Exception {
+		testWithBufferSize(SMALL_RECV_BUFFER);
+	}
 
-		server = new HttpServer("localhost", 0);
+	@Test(timeout = 20000)
+	public void canHandleConcatenatedMessagesNormalBuffer() throws Exception {
+		testWithBufferSize(SocketServer.BUFFER_SIZE);
+	}
+
+	@Test(timeout = 30000)
+	public void canHandleConcatenatedMessagesLargeBuffer() throws Exception {
+		testWithBufferSize(LARGE_RECV_BUFFER);
+	}
+
+	private void testWithBufferSize(final int size) throws Exception {
+		server = new HttpServer("localhost", 0) {
+			@Override
+			protected int getRecvBufferSize() {
+				return size;
+			}
+		};
 		server.start();
 		int port = server.getPort();
 		assertNotEquals("port", port, 0);
@@ -80,37 +112,43 @@ public class HttpServerIntegrationTest {
 		StringBuilder header = getHeader(body.length());
 		final int expectedMessageLength = expectedResponseHeader.length() + body.length();
 
-		final int numMessages = 10000;
+		final int numMessages = 20000;
 		StringBuilder msg = new StringBuilder();
 		for (int i = 0; i < numMessages; i++) {
 			msg.append(header.toString());
 			msg.append(body.toString());
 		}
-
-
 		/*
-		 * The server splits the packets and parses the header. If it understands
-		 * the message, it will send the message back.
-		 * But this doesn't mean that we'll receive the message that way. It might
-		 * be that we receive only a part of the message or if we receive 
-		 * concatenated messages. So we check if we have received all messages
-		 * back from the server, which means that it was able to understand them.
+		 * The server splits the packets and parses the header. If it understands the
+		 * message, it will send the message back. But this doesn't mean that we'll
+		 * receive the message that way. It might be that we receive only a part of the
+		 * message or if we receive concatenated messages. So we check if we have
+		 * received all messages back from the server, which means that it was able to
+		 * understand them.
 		 * 
 		 */
 		final int[] latch = new int[] { expectedMessageLength * numMessages };
 
-		httpBrowserClient = new HttpClientTestAdapter("httpBrowserClient", address, port, new ResponseHandler() {
+		ResponseHandler responseHandler = new ResponseHandler() {
 			@Override
 			public void onMessage(SelectionKey key, byte[] message) {
 				synchronized (latch) {
 					latch[0] -= message.length;
+
 					if (latch[0] == 0) {
 						latch.notify();
 					}
 				}
 
 			}
-		});
+		};
+
+		httpBrowserClient = new HttpClientTestAdapter("httpBrowserClient", address, port, responseHandler) {
+			@Override
+			protected int getRecvBufferSize() {
+				return size;
+			}
+		};
 		httpBrowserClient.start();
 
 		// Allow a bit of time for both connections to be established
@@ -157,4 +195,10 @@ public class HttpServerIntegrationTest {
 		header.append("\r\n\r\n");
 		return header;
 	}
+
+	private static void setupLogger() {
+		Logger logger = Logger.getLogger("");
+		logger.setLevel(Level.ALL);
+	}
+
 }
