@@ -71,7 +71,7 @@ public class HttpServer extends SocketServer {
 		tileman = new TileSerializationManaer();
 		websocketProtocolParser = new WebSocketEncoderDecoder();
 
-		updateableConfigs.put("quality", String.format("%.2f", Config.jpeg_quality));
+		updateableConfigs.put("quality", String.format(Locale.US, "%.2f", Config.jpeg_quality));
 		updateableConfigs.put("fps", String.format("%d", (int) Config.fps));
 	}
 
@@ -111,7 +111,6 @@ public class HttpServer extends SocketServer {
 		try {
 			handle(key, data);
 		} catch (Exception e) {
-			e.printStackTrace();
 			// we shouldn't kill the http server if the client has sent garbage data for
 			// example
 			throw new IOException("httpserver could not create or handle response", e);
