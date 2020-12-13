@@ -71,8 +71,8 @@ public class HttpServer extends SocketServer {
 		tileman = new TileSerializationManaer();
 		websocketProtocolParser = new WebSocketEncoderDecoder();
 
-		updateableConfigs.put("quality", String.valueOf(Config.jpeg_quality));
-		updateableConfigs.put("fps", String.valueOf(Config.fps));
+		updateableConfigs.put("quality", String.format("%.2f", Config.jpeg_quality));
+		updateableConfigs.put("fps", String.format("%d", (int) Config.fps));
 	}
 
 	public int getPort() throws IOException {
@@ -231,8 +231,8 @@ public class HttpServer extends SocketServer {
 				break;
 			}
 			case "/": {
-				res.redirect(String.format(Locale.US, "/remotedesktop.html?quality=%.2f&fps=%d", Config.jpeg_quality,
-						(int) Config.fps));
+				res.redirect(String.format(Locale.US, "/remotedesktop.html?quality=%s&fps=%s",
+						updateableConfigs.get("quality"), updateableConfigs.get("fps")));
 				writeTo(key, ByteBuffer.wrap(res.getResponse()));
 				break;
 			}

@@ -81,7 +81,7 @@ public class Response {
 	public void redirect(String s) {
 		String s1 = (new StringBuilder()).append("<html><body>Redirected: <a href=\"").append(s).append("\">").append(s)
 				.append("</a></body></html>").toString();
-		httpStatus = "301 Moved Permanently";
+		httpStatus = "303 See Other";
 		setMimeType("text/html");
 		setHeader("Location", s);
 		data = (s1.getBytes());
