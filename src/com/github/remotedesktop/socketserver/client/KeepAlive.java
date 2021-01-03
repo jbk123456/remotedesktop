@@ -4,7 +4,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class KeepAlive implements Runnable {
-	private static final Logger logger = Logger.getLogger(KeepAlive.class.getName());
+	static final Logger LOGGER = Logger.getLogger(KeepAlive.class.getName());
 
 	public static final int TIMEOUT = 30;
 
@@ -31,11 +31,11 @@ public class KeepAlive implements Runnable {
 				sendKeepAlive();
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
-				logger.log(Level.SEVERE, "received stop signal");
+				LOGGER.log(Level.SEVERE, "received stop signal");
 				stop();
 			}
 		}
-		logger.info("keep alive stopped");
+		LOGGER.info("keep alive stopped");
 
 	}
 
@@ -58,7 +58,7 @@ public class KeepAlive implements Runnable {
 	}
 
 	public void stop() {
-		logger.info("keep alive stop called");
+		LOGGER.info("keep alive stop called");
 		running = false;
 	}
 

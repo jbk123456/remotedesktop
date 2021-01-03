@@ -1,0 +1,19 @@
+body {
+	margin-top:0;
+	margin-left:0;
+	margin-right:0;
+	margin-bottom:0;
+}
+
+#canvas {
+	width: max-content;
+	height: max-content;
+}
+
+.flex-container {
+	display: flex;
+}
+
+.flex-item {
+	flex: 0 0 auto;
+}

@@ -1,5 +1,5 @@
 #remotedesktop
-Remote Desktop Server, Proxy and HTML Viewer written in Java and JavaScript
+Experimental Remote Desktop Service implementation using WebRTC
 
 ##Building
 

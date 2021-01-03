@@ -15,9 +15,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
-import com.github.remotedesktop.socketserver.ResponseHandler;
+import com.github.remotedesktop.socketserver.HttpServer;
 import com.github.remotedesktop.socketserver.SocketServer;
-import com.github.remotedesktop.socketserver.service.http.HttpServer;
+import com.github.remotedesktop.socketserver.SocketServerBuilder;
+import com.github.remotedesktop.socketserver.plugin.websocket.WebSocketDataFilterPlugin;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class HttpServerIntegrationTest {
@@ -42,7 +43,7 @@ public class HttpServerIntegrationTest {
 
 	@Test(timeout = 5000)
 	public void canHandlePartialMessages() throws Exception {
-		server = new HttpServer("localhost", 0);
+		server = new SocketServerBuilder<>(new HttpServer()).withHost("localhost").withPort(0).build();
 		server.start();
 		int port = server.getPort();
 
@@ -97,12 +98,14 @@ public class HttpServerIntegrationTest {
 	}
 
 	private void testWithBufferSize(final int size) throws Exception {
-		server = new HttpServer("localhost", 0) {
+		HttpServer httpServer = new HttpServer() {
 			@Override
 			protected int getRecvBufferSize() {
 				return size;
 			}
 		};
+		server = new SocketServerBuilder<>(httpServer).withHost("localhost").withPort(0)
+				.withDataFilterPlugin(new WebSocketDataFilterPlugin<>(server)).build();
 		server.start();
 		int port = server.getPort();
 		assertNotEquals("port", port, 0);

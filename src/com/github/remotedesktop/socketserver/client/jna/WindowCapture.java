@@ -36,7 +36,7 @@ import com.sun.jna.platform.win32.WinUser.HOOKPROC;
 import com.sun.jna.win32.W32APIOptions;
 
 public class WindowCapture {
-	private static final Logger logger = Logger.getLogger(WindowCapture.class.getName());
+	static final Logger LOGGER = Logger.getLogger(WindowCapture.class.getName());
 
 	static final int ES_SYSTEM_REQUIRED = 0x00000001;
 	static final int ES_DISPLAY_REQUIRED = 0x00000002;
@@ -52,7 +52,7 @@ public class WindowCapture {
 		HWND hWnd = User32Extra.INSTANCE.GetDesktopWindow();
 		RECT r = new RECT();
 		User32.INSTANCE.GetWindowRect(hWnd, r);
-		if (Config.lock) { 
+		if (Config.lock) {
 			discardLocalInput();
 		}
 		cursors = loadCursors();
@@ -99,7 +99,7 @@ public class WindowCapture {
 		final CURSORINFO cursorinfo = new CURSORINFO();
 		final int success = User32Extra.INSTANCE.GetCursorInfo(cursorinfo);
 		if (success != 1) {
-			logger.log(Level.WARNING, "coud not get cursorinfo");
+			LOGGER.log(Level.WARNING, "coud not get cursorinfo");
 			return null;
 		}
 
@@ -169,12 +169,11 @@ public class WindowCapture {
 				final HOOKPROC keyboardHookProc = new HOOKPROC() {
 					@SuppressWarnings("unused")
 					public LRESULT callback(int nCode, WinDef.WPARAM wParam, WinUser.KBDLLHOOKSTRUCT info) {
-						if (nCode >= 0 && !((info.flags & 0x10) == 0x10)) {
+						if (Config.lock && (nCode >= 0 && !((info.flags & 0x10) == 0x10))) {
 							if (info.vkCode == 19) {
 								if (count++ > 3) {
-									logger.info("display server terminated upon request");
-									System.out.println("display server terminated upon request");
-									System.exit(13);
+									LOGGER.info("display server unlocked upon request");
+									Config.lock = false;
 								}
 							} else {
 								count = 0;
@@ -189,7 +188,7 @@ public class WindowCapture {
 				final HOOKPROC mouseHookProc = new HOOKPROC() {
 					@SuppressWarnings("unused")
 					public LRESULT callback(int nCode, WinDef.WPARAM wParam, MSLLHOOKSTRUCT info) {
-						if (nCode >= 0 && !((info.flags.intValue() & 1) == 1)) {
+						if (Config.lock && (nCode >= 0 && !((info.flags.intValue() & 1) == 1))) {
 							count = 0;
 							return new LRESULT(2);
 						}
@@ -321,6 +320,6 @@ public class WindowCapture {
 
 	public void keepScreenOn(boolean toggle) {
 		Kernel32.INSTANCE.SetThreadExecutionState(ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED | ES_CONTINUOUS);
-		logger.finer("keep windows screen on");
+		LOGGER.finer("keep windows screen on");
 	}
 }

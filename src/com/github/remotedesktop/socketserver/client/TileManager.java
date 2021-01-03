@@ -7,9 +7,9 @@ import com.github.remotedesktop.Config;
 import com.github.remotedesktop.ThreadPool;
 
 public class TileManager {
-	private static final Logger logger = Logger.getLogger(TileManager.class.getName());
+	static final Logger LOGGER = Logger.getLogger(TileManager.class.getName());
 
-	public static final int MAX_TILE = 5;
+	public static final int MAX_TILE = Config.max_tile;
 
 	private ThreadPool pool;
 
@@ -81,35 +81,35 @@ public class TileManager {
 		return numytile;
 	}
 
-	public void updateQuality(float quality) {
-		for (int i = 0; i < numxtile; i++) {
-			for (int j = 0; j < numytile; j++) {
-				Tile tile = tiles[i][j];
-				synchronized (tile) {
-					tile.updateQuality(quality);
-				}
-			}
-		}
-	}
+//	public void updateQuality(float quality) {
+//		for (int i = 0; i < numxtile; i++) {
+//			for (int j = 0; j < numytile; j++) {
+//				Tile tile = tiles[i][j];
+//				synchronized (tile) {
+//					tile.updateQuality(quality);
+//				}
+//			}
+//		}
+//	}
 
-	public void setDirty() {
-		logger.info("marking all tines as dirty");
-		for (int i = 0; i < numxtile; i++) {
-			for (int j = 0; j < numytile; j++) {
-				synchronized (tiles[i][j]) {
-					tiles[i][j].setDirty();
-				}
-			}
-		}
-	}
+//	public void setDirty() {
+//		LOGGER.info("marking all tines as dirty");
+//		for (int i = 0; i < numxtile; i++) {
+//			for (int j = 0; j < numytile; j++) {
+//				synchronized (tiles[i][j]) {
+//					tiles[i][j].setDirty();
+//				}
+//			}
+//		}
+//	}
 
 	public void startRenderPool() {
-		logger.info("tile manager start called");
+		LOGGER.info("tile manager start called");
 		pool = new ThreadPool(getClass().getName(), Config.threads);
 	}
 
 	public void stop() {
-		logger.info("tile manager stop called");
+		LOGGER.info("tile manager stop called");
 		if (pool != null) { // may happen if startRenderPool() wasn't called
 			pool.destroy();
 		}

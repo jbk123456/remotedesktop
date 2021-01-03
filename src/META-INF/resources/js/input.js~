@@ -1,8 +1,9 @@
+'use strict';
+
 var mouseX;
 var mouseY;
 var px;
 var py;
-var serverSocket;
 
 function stopPropagateEvent(e) {
 	e.cancelBubble = true;
@@ -92,42 +93,6 @@ function updateMouse() {
 	setTimeout('javascript:updateMouse();', REMOTEDESKTOPUPDATEMOUSEDELAY);
 }
 
-function connectToServer() {
-	serverSocket = new WebSocket("ws://" + REMOTEDESKTOPHOST);
-	serverSocket.onmessage = function(event) {
-		setTimeout(function() { eval(event.data); }, 1);
-
-	}
-}
-function load() {
-
-	connectToServer();
-	var canvas = document.getElementById("canvas");
-	startKeyListener(keyHandler);
-	startMouseMoveListener(canvas, mousemoveHandler);
-	startMouseButtonListener(canvas, mousebuttonHandler);
-
-	startVisibilityListener(visibilityListener);
-
-	setTimeout('javascript:updateMouse();', REMOTEDESKTOPUPDATEMOUSEDELAY);
-}
-
-function visibilityListener(ev) {
-	if (document.visibilityState == 'hidden') {
-		if (serverSocket) {
-			serverSocket.close();
-		}
-		//serverSocket = null;
-	} else {
-		if (serverSocket) {
-			serverSocket.close();
-		}
-		connectToServer();
-	}
-	return true;
-}
-
-
 function keyHandler(key, code, mask) {
 	sendCtrl("sendKey?key=" + key.charCodeAt(0) + "&code=" + code + "&mask=" + mask + "&c=" + Math.random());
 	return true;
@@ -142,3 +107,4 @@ function mousebuttonHandler(act, button) {
 	sendCtrl("sendMouse?x=" + mouseX + "&y=" + mouseY + "&act=" + act
 		+ "&button=" + button + "&c=" + Math.random());
 }
+

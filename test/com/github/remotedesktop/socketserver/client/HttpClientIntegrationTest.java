@@ -22,19 +22,19 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
-import com.github.remotedesktop.socketserver.ResponseHandler;
-import com.github.remotedesktop.socketserver.SocketServerClient;
+import com.github.remotedesktop.socketserver.HttpServer;
+import com.github.remotedesktop.socketserver.SocketServerBuilder;
 import com.github.remotedesktop.socketserver.http.HttpClientTestAdapter;
-import com.github.remotedesktop.socketserver.service.http.HttpServer;
-import com.github.remotedesktop.socketserver.service.http.WebSocketEncoderDecoder;
+import com.github.remotedesktop.socketserver.http.ResponseHandler;
+import com.github.remotedesktop.socketserver.plugin.websocket.WebSocketEncoderDecoder;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class HttpClientIntegrationTest {
 
-	private static final Logger logger = Logger.getLogger(HttpClientIntegrationTest.class.getName());
+	static final Logger logger = Logger.getLogger(HttpClientIntegrationTest.class.getName());
 	private String address = "localhost";
+	private HttpClientTestAdapter displayServerClient;
 	private HttpServer server;
-	private SocketServerClient displayServerClient;
 	private HttpClientTestAdapter httpBrowserClient;
 	private HttpClientTestAdapter httpBrowserClient2;
 	private WebSocketEncoderDecoder encoder = new WebSocketEncoderDecoder();
@@ -54,7 +54,7 @@ public class HttpClientIntegrationTest {
 	@Test(timeout = 2000)
 	public void sendTiles_expect_WebServerConstructsTiledoc() throws Exception {
 
-		server = new HttpServer("localhost", 0);
+		server = new SocketServerBuilder<>(new HttpServer()).withHost("localhost").withPort(0).build();
 		server.start();
 		int port = server.getPort();
 		assertNotEquals("port", port, 0);
@@ -107,7 +107,7 @@ public class HttpClientIntegrationTest {
 
 	@Test(timeout = 2000)
 	public void sendTiles_expect_allClientsReceiveTiles() throws Exception {
-		server = new HttpServer("localhost", 0);
+		server = new SocketServerBuilder<>(new HttpServer()).withHost("localhost").withPort(0).build();
 		server.start();
 		int port = server.getPort();
 
@@ -115,7 +115,7 @@ public class HttpClientIntegrationTest {
 
 		final CountDownLatch latch = new CountDownLatch(3);
 
-		displayServerClient = new SocketServerClient("client one", address, port);
+		displayServerClient = new HttpClientTestAdapter("client one", address, port);
 		displayServerClient.setResponseHandler(new ResponseHandler() {
 
 			@Override
@@ -158,7 +158,7 @@ public class HttpClientIntegrationTest {
 
 	@Test(timeout = 2000)
 	public void sendTilesAndInput_expect_serverReceivesAllInput() throws Exception {
-		server = new HttpServer("localhost", 0);
+		server = new SocketServerBuilder<>(new HttpServer()).withHost("localhost").withPort(0).build();
 		server.start();
 		int port = server.getPort();
 
@@ -167,7 +167,7 @@ public class HttpClientIntegrationTest {
 		final CountDownLatch latch = new CountDownLatch(6);
 		final CountDownLatch browserLatch = new CountDownLatch(4);
 
-		displayServerClient = new SocketServerClient("client one", address, port);
+		displayServerClient = new HttpClientTestAdapter("client one", address, port);
 		displayServerClient.setResponseHandler(new ResponseHandler() {
 
 			@Override

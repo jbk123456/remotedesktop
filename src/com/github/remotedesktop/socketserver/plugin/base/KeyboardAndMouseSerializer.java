@@ -1,4 +1,4 @@
-package com.github.remotedesktop.socketserver.service;
+package com.github.remotedesktop.socketserver.plugin.base;
 
 import java.io.IOException;
 

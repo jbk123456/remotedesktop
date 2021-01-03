@@ -1,4 +1,4 @@
-package com.github.remotedesktop.socketserver.service.http;
+package com.github.remotedesktop.socketserver;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -70,10 +70,6 @@ public class Response {
 		state = 2;
 	}
 
-	public boolean isFinished() {
-		return state == 4;
-	}
-
 	public String getMimeType() {
 		return getHeader("Content-Type");
 	}
@@ -107,8 +103,7 @@ public class Response {
 		message(httpStatus, getMimeType(), b);
 	}
 
-	public void exception(String s, String s1) throws IOException {
+	public void error(String s, String s1) throws IOException {
 		message(s, s1);
-		throw new IOException(s1);
 	}
 }

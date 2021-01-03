@@ -1,10 +1,12 @@
 package com.github.remotedesktop.socketserver.client;
 
+import java.io.IOException;
+
 public interface TileOperations {
 	
-	void updateTile(int x, int y);
+	void updateTile(int x, int y) throws IOException;
 
-	void updateTileFinish(String cursor);
+	void updateScreen(String cursor) throws IOException;
 
 	void stop();
 

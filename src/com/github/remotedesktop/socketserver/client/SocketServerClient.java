@@ -1,6 +1,6 @@
-package com.github.remotedesktop.socketserver;
+package com.github.remotedesktop.socketserver.client;
 
-import static com.github.remotedesktop.socketserver.SocketServerAttachment.addWriteBuffer;
+import static com.github.remotedesktop.socketserver.Attachment.addWriteBuffer;
 import static java.nio.channels.SelectionKey.OP_CONNECT;
 
 import java.io.IOException;
@@ -12,17 +12,10 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.logging.Logger;
 
+import com.github.remotedesktop.socketserver.SocketServer;
+
 public class SocketServerClient extends SocketServer {
-	private static final Logger logger = Logger.getLogger(SocketServerClient.class.getName());
-	protected ResponseHandler handler;
-
-	public SocketServerClient(String id, String hostname, int port) throws IOException {
-		super(id, new InetSocketAddress(hostname, port));
-	}
-
-	public void setResponseHandler(ResponseHandler handler) {
-		this.handler = handler;
-	}
+	static final Logger LOGGER = Logger.getLogger(SocketServerClient.class.getName());
 
 	@Override
 	protected AbstractSelectableChannel channel(InetSocketAddress address) throws IOException {
@@ -42,11 +35,6 @@ public class SocketServerClient extends SocketServer {
 		return channel.register(selector, OP_CONNECT);
 	}
 
-	@Override
-	protected void handleIncomingData(SelectionKey sender, byte[] data) throws IOException {
-		handler.onMessage(sender, data);
-	}
-
 	public void writeToServerBuffer(ByteBuffer buffer) {
 		SelectionKey key = channel.keyFor(selector);
 		addWriteBuffer(key, buffer);
@@ -61,7 +49,7 @@ public class SocketServerClient extends SocketServer {
 
 	@Override
 	protected void cancelKey(SelectionKey key) {
-		logger.fine("HttpClient: cancel key for: " + key.channel() + " " + key.attachment());
+		LOGGER.info(String.format("HttpClient: cancel key: %s (%s)", key, key.attachment()));
 
 		key.cancel();
 		close(key.channel());

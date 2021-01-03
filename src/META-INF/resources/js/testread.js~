@@ -1,0 +1,41 @@
+
+function readDataFactory() {
+	var values = [];
+    var buf, count=-1;
+    return function onmessage(event) {
+	if (count==-1) {
+		var header = await event.data.slice(0,64, "text/plain").text();
+    	let dataLength;
+    	var pos = 0;
+    	for(var i=0; i<2; i++) { // updateTile currently sends 2 lines
+		var line = parseHeaderLine(data, pos);
+		pos+=line.length+2;
+		if (line.startsWith("PUT")) {// PUT /tile?
+	    	for (pair in line.substring(10).split("&")) {
+			var ar = pair.split("=");
+			values[ar[0].trim()]=ar[1].trim();
+	    	}
+		}
+		if (line.startsWith("Content-Length")) {
+	   		dataLength = line.split(":")[1].trim();
+		}
+    }
+ 
+	    
+	    buf = new Uint8ClampedArray(parseInt(event.data));
+	    count = 0;
+	    console.log('Expecting a total of ' + buf.byteLength + ' bytes');
+	    return;
+	}
+	var data = new Uint8ClampedArray(event.data);
+	buf.set(data, count);
+
+	count += data.byteLength;
+	console.log('count: ' + count);
+
+	if (count === buf.byteLength) {
+	    // we're done: all data chunks have been received
+	    console.log('Done. Rendering photo.');
+	}
+    }
+}

@@ -1,9 +1,3 @@
-Hei Chan:
-In the directory META-INF/resources wrote ajaxvnc.js and in the directory 
-socketserver/client wrote ScreenScanner.java, Tile.java, TileManager.java and KVMManager.java
-The files were taken from his "ajaxvnc" implementation: 
-https://sourceforge.net/projects/ajaxvnc/
-
 Eric Butler:
 In the directory socketserver/service/http wrote WebSocketEncoderDecoder.java
 The file was taken from his "android websockets" implementation: 

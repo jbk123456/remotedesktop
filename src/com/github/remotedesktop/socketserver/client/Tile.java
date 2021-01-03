@@ -18,7 +18,7 @@ import com.github.remotedesktop.ThreadPool;
 
 public class Tile implements Runnable {
 
-	private static final Logger logger = Logger.getLogger(Tile.class.getName());
+	static final Logger LOGGER = Logger.getLogger(Tile.class.getName());
 	private ByteArrayOutputStream stream;
 	private BufferedImage prevImage;
 	private BufferedImage actImage;
@@ -49,7 +49,7 @@ public class Tile implements Runnable {
 	public void updateQuality(float quality) {
 		synchronized (param) {
 			param.setCompressionQuality(quality);
-			logger.fine(String.format("set compression quality to %f", quality));
+			LOGGER.fine(String.format("set compression quality to %f", quality));
 		}
 	}
 	
@@ -70,7 +70,7 @@ public class Tile implements Runnable {
 			imageWriter.reset();
 
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, "write image", e);
+			LOGGER.log(Level.SEVERE, "write image", e);
 		}
 	}
 
@@ -93,7 +93,7 @@ public class Tile implements Runnable {
 		try {
 			processImage();
 		} catch (Exception e) {
-			logger.log(Level.WARNING, "could not create tile", e);
+			LOGGER.log(Level.WARNING, "could not create tile", e);
 		} finally {
 			synchronized (workerLock) {
 				isFinish = true;

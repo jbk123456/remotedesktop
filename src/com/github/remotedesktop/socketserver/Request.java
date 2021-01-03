@@ -1,4 +1,4 @@
-package com.github.remotedesktop.socketserver.service.http;
+package com.github.remotedesktop.socketserver;
 
 import java.io.IOException;
 import java.net.URI;
@@ -9,7 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Request {
-	private static final Logger logger = Logger.getLogger(Request.class.getName());
+	static final Logger LOGGER = Logger.getLogger(Request.class.getName());
 
 	private URI uri;
 	private Properties params;
@@ -20,6 +20,7 @@ public class Request {
 	private int remaining;
 	@SuppressWarnings("unused")
 	private String method;
+
 
 	public Request(SelectionKey key) {
 		params = new Properties();
@@ -103,7 +104,7 @@ public class Request {
 			}
 
 		} catch (Throwable t) {
-			logger.log(Level.SEVERE, "parse request line", t);
+			LOGGER.log(Level.SEVERE, "parse request line", t);
 		}
 	}
 

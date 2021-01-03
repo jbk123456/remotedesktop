@@ -7,7 +7,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ThreadPool {
-	private static final Logger logger = Logger.getLogger(ThreadPool.class.getName());
+	static final Logger LOGGER = Logger.getLogger(ThreadPool.class.getName());
 
 	private String name;
 	private int threads;
@@ -63,7 +63,7 @@ public class ThreadPool {
 			} catch (InterruptedException e) {
 				/* ignore */
 			} catch (Throwable t) {
-				logger.log(Level.WARNING, "runnable terminated unexpected", t);
+				LOGGER.log(Level.WARNING, "runnable terminated unexpected", t);
 				createThread(getName());
 			} finally {
 				terminate();
@@ -118,7 +118,7 @@ public class ThreadPool {
 	/**
 	 * Terminate all threads in the pool.
 	 */
-	public void destroy() {
+	public synchronized void destroy() {
 		for (Iterator<Delegate> ii = delegates.iterator(); ii.hasNext();) {
 			Delegate d = ii.next();
 			d.terminate = true;

@@ -1,4 +1,4 @@
-package com.github.remotedesktop.socketserver.service.http;
+package com.github.remotedesktop.socketserver.plugin.websocket;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

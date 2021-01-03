@@ -9,7 +9,7 @@ import java.awt.image.BufferedImage;
 import java.util.logging.Logger;
 
 public class KVMManagerJava extends KVMManager {
-	private static final Logger logger = Logger.getLogger(KVMManagerJava.class.getName());
+	static final Logger LOGGER = Logger.getLogger(KVMManagerJava.class.getName());
 
 	private Robot robot;
 
@@ -66,10 +66,10 @@ public class KVMManagerJava extends KVMManager {
 	@Override
 	public void keepScreenOn(boolean toggle) {
 		if (toggle) {
-			logger.finer("keep linux screen on by pressing num lock");
+			LOGGER.finer("keep linux screen on by pressing num lock");
 			sendKeyPress(KeyEvent.VK_NUM_LOCK); // keep screen on
 		} else {
-			logger.finer("keep linux screen on by releasing num lock");
+			LOGGER.finer("keep linux screen on by releasing num lock");
 			sendKeyRelease(KeyEvent.VK_NUM_LOCK); // keep screen on
 		}
 	}

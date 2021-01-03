@@ -1,10 +1,10 @@
 package com.github.remotedesktop.socketserver;
 
-import static com.github.remotedesktop.socketserver.SocketServerAttachment.getWriteBuffer;
-import static com.github.remotedesktop.socketserver.SocketServerAttachment.getMulticastGroup;
-import static com.github.remotedesktop.socketserver.SocketServerAttachment.getPushBackBuffer;
-import static com.github.remotedesktop.socketserver.SocketServerAttachment.addWriteBuffer;
-import static com.github.remotedesktop.socketserver.SocketServerAttachment.setPushBackBuffer;
+import static com.github.remotedesktop.socketserver.Attachment.addWriteBuffer;
+import static com.github.remotedesktop.socketserver.Attachment.getMulticastGroup;
+import static com.github.remotedesktop.socketserver.Attachment.getPushBackBuffer;
+import static com.github.remotedesktop.socketserver.Attachment.getWriteBuffer;
+import static com.github.remotedesktop.socketserver.Attachment.setPushBackBuffer;
 import static java.lang.System.arraycopy;
 import static java.nio.channels.SelectionKey.OP_READ;
 import static java.nio.channels.SelectionKey.OP_WRITE;
@@ -19,12 +19,18 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.github.remotedesktop.socketserver.plugin.base.DataFilterPlugin;
+import com.github.remotedesktop.socketserver.plugin.base.ServiceHandlerPlugin;
+
 public abstract class SocketServer implements Runnable {
-	private static final Logger logger = Logger.getLogger(SocketServer.class.getName());
+	static final Logger LOGGER = Logger.getLogger(SocketServer.class.getName());
 
 	public static final int BUFFER_SIZE = 65535; // 8 * buffer cache size
 
@@ -33,20 +39,27 @@ public abstract class SocketServer implements Runnable {
 	private boolean isFinish = false;
 	private boolean running = true;
 
-	protected final String id;
-	protected final ByteBuffer incomingBuffer;
+	protected String id;
+	protected ByteBuffer incomingBuffer;
 	protected Selector selector;
 	protected AbstractSelectableChannel channel;
-	protected final InetSocketAddress address;
+	protected InetSocketAddress address;
 
-	public SocketServer(String id, String addr, int port) throws IOException {
-		this(id, addr == null ? new InetSocketAddress(port) : new InetSocketAddress(InetAddress.getByName(addr), port));
+	protected final List<DataFilterPlugin> dataFilters = new ArrayList<>();
+	protected final List<ServiceHandlerPlugin> serviceHandlers = new ArrayList<>(
+			Collections.singletonList((req, res) -> service(req, res)));
+
+	public SocketServer() {
 	}
 
-	public SocketServer(String id, InetSocketAddress address) throws IOException {
+	protected final void init(String id, String addr, int port) throws IOException {
+		init(id, addr == null ? new InetSocketAddress(port) : new InetSocketAddress(InetAddress.getByName(addr), port));
+	}
+
+	private void init(String id, InetSocketAddress address) throws IOException {
 		this.id = id;
-		this.address = address;
 		this.incomingBuffer = ByteBuffer.allocate(getRecvBufferSize());
+		this.address = address;
 		this.channel = channel(address);
 		this.selector = selector();
 	}
@@ -58,9 +71,8 @@ public abstract class SocketServer implements Runnable {
 	}
 
 	private void enableAttachments(SelectionKey key) {
-		key.attach(new SocketServerAttachment());
+		key.attach(new Attachment());
 	}
-
 
 	public void start() {
 		new Thread(this, id).start();
@@ -69,7 +81,7 @@ public abstract class SocketServer implements Runnable {
 	public void stop() {
 		synchronized (stopLock) {
 			if (running) {
-				logger.info("socket server stop called");
+				LOGGER.info("socket server stop called");
 				running = false;
 				cleanUp();
 			}
@@ -83,13 +95,13 @@ public abstract class SocketServer implements Runnable {
 				runMainLoop();
 			}
 		} catch (Throwable t) {
-			logger.log(Level.SEVERE, "socket server terminated", t);
+			LOGGER.log(Level.SEVERE, "socket server terminated", t);
 		} finally {
-			logger.info("stopping socket server");
+			LOGGER.info("stopping socket server");
 			running = false;
 			cleanUp();
 			synchronized (waitForFinishLock) {
-				logger.info("stopped socket server");
+				LOGGER.info("stopped socket server");
 				isFinish = true;
 				waitForFinishLock.notifyAll();
 			}
@@ -114,12 +126,12 @@ public abstract class SocketServer implements Runnable {
 	protected int getRecvBufferSize() {
 		return BUFFER_SIZE;
 	}
-	
+
 	private void runMainLoop() {
 		try {
 			select();
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, "socket server terminated", e);
+			LOGGER.log(Level.SEVERE, "socket server terminated", e);
 			try {
 				Thread.sleep(10000);
 				if (selector.isOpen())
@@ -131,7 +143,7 @@ public abstract class SocketServer implements Runnable {
 				this.channel = channel(address);
 				this.selector = selector();
 			} catch (Exception ee) {
-				logger.log(Level.SEVERE, "fatal error", ee);
+				LOGGER.log(Level.SEVERE, "fatal error", ee);
 			}
 		}
 	}
@@ -160,7 +172,7 @@ public abstract class SocketServer implements Runnable {
 					write(key);
 				}
 			} catch (IOException e) {
-				logger.log(Level.SEVERE, "select", e);
+				LOGGER.log(Level.SEVERE, "select", e);
 				cancelKey(key);
 			}
 		}
@@ -177,7 +189,7 @@ public abstract class SocketServer implements Runnable {
 		SocketChannel channel = (SocketChannel) key.channel();
 		boolean connected = channel.finishConnect();
 		if (!connected) {
-			logger.fine("not yet connected");
+			LOGGER.fine("not yet connected");
 		}
 		channel.configureBlocking(false);
 		enableAttachments(channel.register(selector, OP_READ));
@@ -193,15 +205,14 @@ public abstract class SocketServer implements Runnable {
 			c = channel.read(incomingBuffer);
 		} while (c > 0);
 
-		logger.finest(String.format("read %d bytes", incomingBuffer.position()));
-		
+		LOGGER.finest(String.format("read %d bytes", incomingBuffer.position()));
 		if (c == -1) {
-			logger.log(Level.WARNING, "cannot read data, connection lost");
+			LOGGER.log(Level.WARNING, "cannot read data, connection lost");
 			throw new IOException("disconnected");
 		}
 		int count = incomingBuffer.position();
 		if (count == 0) {
-			logger.fine("could not read data yet, sleeping...");
+			LOGGER.fine("could not read data yet, sleeping...");
 			key.interestOps(OP_READ);
 			return; // short read, try again
 		}
@@ -210,9 +221,9 @@ public abstract class SocketServer implements Runnable {
 		setPushBackBuffer(key, null);
 
 		if (remainBuffer != null) {
-			logger.finest(String.format("merge %d bytes from back buffer", remainBuffer.capacity()));
+			LOGGER.finest(String.format("merge %d bytes from back buffer", remainBuffer.capacity()));
 			count += remainBuffer.capacity();
-			logger.finest(String.format("total bytes read: %d", count));
+			LOGGER.finest(String.format("total bytes read: %d", count));
 			data = new byte[count];
 			arraycopy(remainBuffer.array(), 0, data, 0, remainBuffer.capacity());
 			arraycopy(incomingBuffer.array(), 0, data, remainBuffer.capacity(), incomingBuffer.position());
@@ -221,28 +232,79 @@ public abstract class SocketServer implements Runnable {
 			arraycopy(incomingBuffer.array(), 0, data, 0, incomingBuffer.position());
 		}
 
-		handleIncomingData(key, data);
-
-		key.interestOps(OP_READ);
+		try {
+			handleIncomingData(key, data);
+			key.interestOps(OP_READ);
+		} catch (IOException ex) {
+			throw ex;
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "read handler failed", e);
+			cancelKey(key);
+		}
 	}
 
-	protected final void write(SelectionKey key) throws IOException {
-		ByteBuffer buffer;
+	protected void handleIncomingData(SelectionKey key, byte[] data) throws IOException {
 
+		byte[] filteredData = data;
+		for (DataFilterPlugin p : dataFilters) {
+			LOGGER.finest(String.format("running DataFilterPlugin: %s", p.getClass().getName()));
+			if ((filteredData = p.filter(key, filteredData)) == null) {
+				return;
+			}
+		}
+
+		onMessages(key, filteredData);
+	}
+
+	private void onMessages(SelectionKey key, byte[] data) throws IOException {
+		Request req = null;
+		int remaining = 0;
+		do {
+			if (remaining > 0) {
+
+				byte[] newdata = new byte[remaining];
+				System.arraycopy(data, data.length - remaining, newdata, 0, remaining);
+				data = newdata;
+			}
+
+			req = new Request(key);
+			remaining = req.parse(data);
+			if (remaining < 0) {
+				LOGGER.fine("could not read data yet, sleeping...");
+				setPushBackBuffer(key, ByteBuffer.wrap(data));
+				key.interestOps(OP_READ);
+				return; // partial read, get the rest
+			}
+			Response res = new Response();
+			for (ServiceHandlerPlugin p : serviceHandlers) {
+				if (p.service(req, res)) {
+					LOGGER.finest(String.format("running ServiceHandlerPlugin: %s", p.getClass().getName()));
+					break;
+				}
+			}
+			if (res.isReady()) {
+				writeTo(key, ByteBuffer.wrap(res.getResponse()));
+			}
+		} while (remaining > 0);
+
+	}
+
+	public final void write(SelectionKey key) throws IOException {
+		ByteBuffer buffer;
 		while ((buffer = getWriteBuffer(key).peek()) != null) {
 			SocketChannel channel = (SocketChannel) key.channel();
 
 			while (buffer.hasRemaining()) {
 
-				logger.finest(String.format("about to write %d bytes", buffer.remaining()));
+				LOGGER.finest(String.format("about to write %d bytes", buffer.remaining()));
 				int count = channel.write(buffer);
-				logger.finest(String.format("wrote %d bytes", count));
-				
-				if (count==-1) {
+				LOGGER.finest(String.format("wrote %d bytes", count));
+
+				if (count == -1) {
 					throw new IOException("short write");
 				}
 				if (count == 0) {
-					logger.finest("could not write yet, sleeping...");
+					LOGGER.fine("could not write yet, sleeping...");
 					key.interestOps(OP_WRITE);
 					return;
 				}
@@ -252,7 +314,7 @@ public abstract class SocketServer implements Runnable {
 		key.interestOps(OP_READ);
 	}
 
-	protected final void writeToGroup(SocketServerMulticastGroup role, ByteBuffer buffer) {
+	public final void writeToGroup(Group role, ByteBuffer buffer) {
 		int clients = 0;
 		for (SelectionKey key : selector.keys()) {
 			if (role == getMulticastGroup(key)) {
@@ -261,7 +323,7 @@ public abstract class SocketServer implements Runnable {
 				try {
 					write(key);
 				} catch (IOException e) {
-					logger.log(Level.WARNING, "write to group", e);
+					LOGGER.log(Level.WARNING, "write to group", e);
 					// do not let the exception escape to top-level
 					// as this would cancel the wrong key
 					cancelKey(key);
@@ -269,11 +331,11 @@ public abstract class SocketServer implements Runnable {
 			}
 		}
 		if (clients == 0) {
-			logger.finer("write to group: " + role + " nobody cares");
+			LOGGER.info("write to group: " + role + " nobody cares");
 		}
 	}
 
-	protected final void writeTo(SelectionKey key, ByteBuffer buffer) throws IOException {
+	public final void writeTo(SelectionKey key, ByteBuffer buffer) throws IOException {
 		addWriteBuffer(key, buffer);
 		write(key);
 	}
@@ -287,11 +349,13 @@ public abstract class SocketServer implements Runnable {
 		}
 	}
 
+	private boolean service(Request req, Response res) {
+		return false;
+	}
+
 	protected abstract AbstractSelectableChannel channel(InetSocketAddress address) throws IOException;
 
 	protected abstract SelectionKey channelRegister(Selector selector) throws IOException;
-
-	protected abstract void handleIncomingData(SelectionKey sender, byte[] data) throws IOException;
 
 	protected abstract Selector openSelector() throws IOException;
 

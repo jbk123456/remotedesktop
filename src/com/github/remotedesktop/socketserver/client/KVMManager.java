@@ -33,7 +33,7 @@ public abstract class KVMManager {
 
 	protected int convAscii(int ascii) {
 		Integer scancode;
-		scancode = (Integer) keymap.get(new Integer(ascii));
+		scancode = (Integer) keymap.get(ascii);
 		if (scancode == null)
 			return -1;
 		else
@@ -142,94 +142,89 @@ public abstract class KVMManager {
 	}
 
 	private void assignKeyMap() {
-		keymap.put(new Integer(16), new Integer(-2)); // KeyEvent.VK_SHIFT Shift
-		keymap.put(new Integer(17), new Integer(-2)); // KeyEvent.VK_CONTROL Ctrl
-		keymap.put(new Integer(18), new Integer(-2)); // KeyEvent.VK_ALT Alt
-		keymap.put(new Integer(225), new Integer(-2)); // KeyEvent.VK_ALT_GRAPH AltGr
+		keymap.put((16), (-2)); // KeyEvent.VK_SHIFT Shift
+		keymap.put((17), (-2)); // KeyEvent.VK_CONTROL Ctrl
+		keymap.put((18), (-2)); // KeyEvent.VK_ALT Alt
+		keymap.put((225), (-2)); // KeyEvent.VK_ALT_GRAPH AltGr
 
-		keymap.put(new Integer(173), new Integer(KeyEvent.VK_MINUS)); // -
+		keymap.put((173), (KeyEvent.VK_MINUS)); // -
 
-		keymap.put(new Integer(27), new Integer(KeyEvent.VK_ESCAPE)); // Esc
-//		keymap.put(new Integer(192), new Integer(KeyEvent.VK_BACK_QUOTE)); // `
-		keymap.put(new Integer(49), new Integer(KeyEvent.VK_1)); // 1
-		keymap.put(new Integer(50), new Integer(KeyEvent.VK_2)); // 2
-		keymap.put(new Integer(51), new Integer(KeyEvent.VK_3)); // 3
-		keymap.put(new Integer(52), new Integer(KeyEvent.VK_4)); // 4
-		keymap.put(new Integer(53), new Integer(KeyEvent.VK_5)); // 5
-		keymap.put(new Integer(54), new Integer(KeyEvent.VK_6)); // 6
-//		keymap.put(new Integer(55), new Integer(KeyEvent.VK_7)); // 7
-//		keymap.put(new Integer(56), new Integer(KeyEvent.VK_8)); // 8
-//		keymap.put(new Integer(57), new Integer(KeyEvent.VK_9)); // 9
-//		keymap.put(new Integer(48), new Integer(KeyEvent.VK_0)); // 0
-		keymap.put(new Integer(189), new Integer(KeyEvent.VK_MINUS)); // -
-		keymap.put(new Integer(187), new Integer(KeyEvent.VK_EQUALS)); // =
-		keymap.put(new Integer(8), new Integer(KeyEvent.VK_BACK_SPACE)); // Backspace
+		keymap.put((27), (KeyEvent.VK_ESCAPE)); // Esc
 
-		keymap.put(new Integer(9), new Integer(KeyEvent.VK_TAB)); // Tab
-//		keymap.put(new Integer(81), new Integer(KeyEvent.VK_Q)); // Q
-		keymap.put(new Integer(87), new Integer(KeyEvent.VK_W)); // W
-		keymap.put(new Integer(69), new Integer(KeyEvent.VK_E)); // E
-		keymap.put(new Integer(82), new Integer(KeyEvent.VK_R)); // R
-		keymap.put(new Integer(84), new Integer(KeyEvent.VK_T)); // T
-		keymap.put(new Integer(89), new Integer(KeyEvent.VK_Y)); // Y
-		keymap.put(new Integer(85), new Integer(KeyEvent.VK_U)); // U
-		keymap.put(new Integer(73), new Integer(KeyEvent.VK_I)); // I
-		keymap.put(new Integer(79), new Integer(KeyEvent.VK_O)); // O
-		keymap.put(new Integer(80), new Integer(KeyEvent.VK_P)); // P
-//		keymap.put(new Integer(219), new Integer(KeyEvent.VK_OPEN_BRACKET)); // [
-//		keymap.put(new Integer(221), new Integer(KeyEvent.VK_CLOSE_BRACKET)); // ]
-//		keymap.put(new Integer(220), new Integer(KeyEvent.VK_BACK_SLASH)); // \
-		keymap.put(new Integer(65), new Integer(KeyEvent.VK_A)); // A
-		keymap.put(new Integer(83), new Integer(KeyEvent.VK_S)); // S
-		keymap.put(new Integer(68), new Integer(KeyEvent.VK_D)); // D
-		keymap.put(new Integer(70), new Integer(KeyEvent.VK_F)); // F
-		keymap.put(new Integer(71), new Integer(KeyEvent.VK_G)); // G
-		keymap.put(new Integer(72), new Integer(KeyEvent.VK_H)); // H
-		keymap.put(new Integer(74), new Integer(KeyEvent.VK_J)); // J
-		keymap.put(new Integer(75), new Integer(KeyEvent.VK_K)); // K
-		keymap.put(new Integer(76), new Integer(KeyEvent.VK_L)); // L
-		keymap.put(new Integer(186), new Integer(KeyEvent.VK_SEMICOLON)); // ;
+		keymap.put((49), (KeyEvent.VK_1)); // 1
+		keymap.put((50), (KeyEvent.VK_2)); // 2
+		keymap.put((51), (KeyEvent.VK_3)); // 3
+		keymap.put((52), (KeyEvent.VK_4)); // 4
+		keymap.put((53), (KeyEvent.VK_5)); // 5
+		keymap.put((54), (KeyEvent.VK_6)); // 6
 
-		keymap.put(new Integer(13), new Integer(KeyEvent.VK_ENTER)); // Enter
-		keymap.put(new Integer(90), new Integer(KeyEvent.VK_Z)); // Z
-		keymap.put(new Integer(88), new Integer(KeyEvent.VK_X)); // X
-		keymap.put(new Integer(67), new Integer(KeyEvent.VK_C)); // C
-		keymap.put(new Integer(86), new Integer(KeyEvent.VK_V)); // V
-		keymap.put(new Integer(66), new Integer(KeyEvent.VK_B)); // B
-		keymap.put(new Integer(78), new Integer(KeyEvent.VK_N)); // N
-		keymap.put(new Integer(77), new Integer(KeyEvent.VK_M)); // M
-		keymap.put(new Integer(188), new Integer(KeyEvent.VK_COMMA)); // ,
-//		keymap.put(new Integer(190), new Integer(KeyEvent.VK_DECIMAL)); // .
-		keymap.put(new Integer(191), new Integer(KeyEvent.VK_SLASH)); // /
-		keymap.put(new Integer(32), new Integer(KeyEvent.VK_SPACE)); // Space
-		keymap.put(new Integer(112), new Integer(KeyEvent.VK_F1)); // F1
-		keymap.put(new Integer(113), new Integer(KeyEvent.VK_F2)); // F2
-		keymap.put(new Integer(114), new Integer(KeyEvent.VK_F3)); // F3
-		keymap.put(new Integer(115), new Integer(KeyEvent.VK_F4)); // F4
-		keymap.put(new Integer(116), new Integer(KeyEvent.VK_F5)); // F5
-		keymap.put(new Integer(117), new Integer(KeyEvent.VK_F6)); // F6
-		keymap.put(new Integer(118), new Integer(KeyEvent.VK_F7)); // F7
-		keymap.put(new Integer(119), new Integer(KeyEvent.VK_F8)); // F8
-		keymap.put(new Integer(120), new Integer(KeyEvent.VK_F9)); // F9
-		keymap.put(new Integer(121), new Integer(KeyEvent.VK_F10)); // F10
-		keymap.put(new Integer(122), new Integer(KeyEvent.VK_F11)); // F11
-		keymap.put(new Integer(123), new Integer(KeyEvent.VK_F12)); // F12
-		keymap.put(new Integer(111), new Integer(KeyEvent.VK_SLASH)); // /
-		keymap.put(new Integer(42), new Integer(KeyEvent.VK_ASTERISK)); // *
-		keymap.put(new Integer(45), new Integer(KeyEvent.VK_MINUS)); // -
-		keymap.put(new Integer(43), new Integer(KeyEvent.VK_PLUS)); // +
-		keymap.put(new Integer(46), new Integer(KeyEvent.VK_DELETE)); // Del
-		keymap.put(new Integer(13), new Integer(KeyEvent.VK_ENTER)); // Enter
-		keymap.put(new Integer(36), new Integer(KeyEvent.VK_HOME)); // Home
-		keymap.put(new Integer(38), new Integer(KeyEvent.VK_UP)); // Up
-		keymap.put(new Integer(33), new Integer(KeyEvent.VK_PAGE_UP)); // PgUp
-		keymap.put(new Integer(37), new Integer(KeyEvent.VK_LEFT)); // Left
-		keymap.put(new Integer(39), new Integer(KeyEvent.VK_RIGHT)); // Right
-		keymap.put(new Integer(35), new Integer(KeyEvent.VK_END)); // End
-		keymap.put(new Integer(40), new Integer(KeyEvent.VK_DOWN)); // Down
-		keymap.put(new Integer(34), new Integer(KeyEvent.VK_PAGE_DOWN)); // PgDn
-		keymap.put(new Integer(45), new Integer(KeyEvent.VK_INSERT)); // Ins
-		keymap.put(new Integer(46), new Integer(KeyEvent.VK_DELETE)); // Del
+		keymap.put((189), (KeyEvent.VK_MINUS)); // -
+		keymap.put((187), (KeyEvent.VK_EQUALS)); // =
+		keymap.put((8), (KeyEvent.VK_BACK_SPACE)); // Backspace
+
+		keymap.put((9), (KeyEvent.VK_TAB)); // Tab
+
+		keymap.put((87), (KeyEvent.VK_W)); // W
+		keymap.put((69), (KeyEvent.VK_E)); // E
+		keymap.put((82), (KeyEvent.VK_R)); // R
+		keymap.put((84), (KeyEvent.VK_T)); // T
+		keymap.put((89), (KeyEvent.VK_Y)); // Y
+		keymap.put((85), (KeyEvent.VK_U)); // U
+		keymap.put((73), (KeyEvent.VK_I)); // I
+		keymap.put((79), (KeyEvent.VK_O)); // O
+		keymap.put((80), (KeyEvent.VK_P)); // P
+
+		keymap.put((65), (KeyEvent.VK_A)); // A
+		keymap.put((83), (KeyEvent.VK_S)); // S
+		keymap.put((68), (KeyEvent.VK_D)); // D
+		keymap.put((70), (KeyEvent.VK_F)); // F
+		keymap.put((71), (KeyEvent.VK_G)); // G
+		keymap.put((72), (KeyEvent.VK_H)); // H
+		keymap.put((74), (KeyEvent.VK_J)); // J
+		keymap.put((75), (KeyEvent.VK_K)); // K
+		keymap.put((76), (KeyEvent.VK_L)); // L
+		keymap.put((186), (KeyEvent.VK_SEMICOLON)); // ;
+
+		keymap.put((13), (KeyEvent.VK_ENTER)); // Enter
+		keymap.put((90), (KeyEvent.VK_Z)); // Z
+		keymap.put((88), (KeyEvent.VK_X)); // X
+		keymap.put((67), (KeyEvent.VK_C)); // C
+		keymap.put((86), (KeyEvent.VK_V)); // V
+		keymap.put((66), (KeyEvent.VK_B)); // B
+		keymap.put((78), (KeyEvent.VK_N)); // N
+		keymap.put((77), (KeyEvent.VK_M)); // M
+		keymap.put((188), (KeyEvent.VK_COMMA)); // ,
+
+		keymap.put((191), (KeyEvent.VK_SLASH)); // /
+		keymap.put((32), (KeyEvent.VK_SPACE)); // Space
+		keymap.put((112), (KeyEvent.VK_F1)); // F1
+		keymap.put((113), (KeyEvent.VK_F2)); // F2
+		keymap.put((114), (KeyEvent.VK_F3)); // F3
+		keymap.put((115), (KeyEvent.VK_F4)); // F4
+		keymap.put((116), (KeyEvent.VK_F5)); // F5
+		keymap.put((117), (KeyEvent.VK_F6)); // F6
+		keymap.put((118), (KeyEvent.VK_F7)); // F7
+		keymap.put((119), (KeyEvent.VK_F8)); // F8
+		keymap.put((120), (KeyEvent.VK_F9)); // F9
+		keymap.put((121), (KeyEvent.VK_F10)); // F10
+		keymap.put((122), (KeyEvent.VK_F11)); // F11
+		keymap.put((123), (KeyEvent.VK_F12)); // F12
+		keymap.put((111), (KeyEvent.VK_SLASH)); // /
+		keymap.put((42), (KeyEvent.VK_ASTERISK)); // *
+		keymap.put((45), (KeyEvent.VK_MINUS)); // -
+		keymap.put((43), (KeyEvent.VK_PLUS)); // +
+		keymap.put((46), (KeyEvent.VK_DELETE)); // Del
+		keymap.put((13), (KeyEvent.VK_ENTER)); // Enter
+		keymap.put((36), (KeyEvent.VK_HOME)); // Home
+		keymap.put((38), (KeyEvent.VK_UP)); // Up
+		keymap.put((33), (KeyEvent.VK_PAGE_UP)); // PgUp
+		keymap.put((37), (KeyEvent.VK_LEFT)); // Left
+		keymap.put((39), (KeyEvent.VK_RIGHT)); // Right
+		keymap.put((35), (KeyEvent.VK_END)); // End
+		keymap.put((40), (KeyEvent.VK_DOWN)); // Down
+		keymap.put((34), (KeyEvent.VK_PAGE_DOWN)); // PgDn
+		keymap.put((45), (KeyEvent.VK_INSERT)); // Ins
+		keymap.put((46), (KeyEvent.VK_DELETE)); // Del
 	}
 
 	protected abstract void sendKeyPress(int vkAlt);
