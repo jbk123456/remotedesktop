@@ -1,4 +1,4 @@
-/*-*- mode: JavaScript; tab-width:2 -*-*/
+/*-*- mode: JavaScript; tab-width: 4 -*-*/
 
 'use strict';
 
@@ -11,12 +11,12 @@ function startVisibilityListener(callback) {
 
 function connectToServer() {
     serverSocket = new WebSocket("ws://" + REMOTEDESKTOPHOST);
-		async function getBackbufferFromEvent(event) {
-				//return event;
+    async function getBackbufferFromEvent(event) {
+        //return event;
 
-				var data = await event.data.arrayBuffer();
-				return new Uint8ClampedArray(data);
-		}    
+        var data = await event.data.arrayBuffer();
+        return new Uint8ClampedArray(data);
+    }
 
 
     serverSocket.onmessage = readDataClosure();
@@ -37,15 +37,15 @@ function load() {
 
 function visibilityListener() {
     if (document.visibilityState == 'hidden') {
-				if (serverSocket) {
-						serverSocket.close();
-				}
-				//serverSocket = null;
+        if (serverSocket) {
+            serverSocket.close();
+        }
+        //serverSocket = null;
     } else {
-				if (serverSocket) {
-						serverSocket.close();
-				}
-				connectToServer();
+        if (serverSocket) {
+            serverSocket.close();
+        }
+        connectToServer();
     }
     return true;
 }
