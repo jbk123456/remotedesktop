@@ -1,3 +1,9 @@
+Corey Baswell:
+In the directory socketserver/niossl wrote SSLEngineBuffer.java,
+SSLServerSocketChannel.java and SSLSocketChannel.java
+The files were taken from his repository:
+https://github.com/baswerc/niossl
+
 Eric Butler:
 In the directory socketserver/service/http wrote WebSocketEncoderDecoder.java
 The file was taken from his "android websockets" implementation: 

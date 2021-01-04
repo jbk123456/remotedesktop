@@ -5,16 +5,15 @@ import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.spi.AbstractSelectableChannel;
 import java.nio.channels.spi.SelectorProvider;
+import java.security.KeyManagementException;
 import java.util.logging.Logger;
 
-public class HttpServer extends SocketServer {
+public class HttpServer extends SSLSocketServer {
 	static final Logger LOGGER = Logger.getLogger(HttpServer.class.getName());
 
 	public static final String HTTP_OK = "200 OK";
@@ -23,12 +22,12 @@ public class HttpServer extends SocketServer {
 	public static final String HTTP_INTERNALERROR = "500 Internal Server Error";
 	public static final String MIME_DEFAULT_BINARY = "application/octet-stream";
 
-	public HttpServer(){
+	public HttpServer() throws KeyManagementException, Exception{
 		super();
 	}
 
 	public int getPort() throws IOException {
-		ServerSocketChannel serverChannel = (ServerSocketChannel) channel;
+		ServerSocketChannel serverChannel = (ServerSocketChannel) getChannel();
 		return serverChannel.socket().getLocalPort();
 	}
 
@@ -39,15 +38,7 @@ public class HttpServer extends SocketServer {
 
 	@Override
 	protected SelectionKey channelRegister(Selector selector) throws ClosedChannelException {
-		return channel.register(selector, OP_ACCEPT);
-	}
-
-	@Override
-	protected AbstractSelectableChannel channel(InetSocketAddress address) throws IOException {
-		ServerSocketChannel channel = ServerSocketChannel.open();
-		channel.configureBlocking(false);
-		channel.socket().bind(address);
-		return channel;
+		 return channel.register(selector, OP_ACCEPT);
 	}
 
 	public static InputStream getFileInputStream(String fn) {

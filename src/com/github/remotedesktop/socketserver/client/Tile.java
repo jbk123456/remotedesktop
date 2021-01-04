@@ -4,6 +4,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,7 +15,7 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 
 import com.github.remotedesktop.Config;
-import com.github.remotedesktop.ThreadPool;
+
 
 public class Tile implements Runnable {
 
@@ -29,9 +30,9 @@ public class Tile implements Runnable {
 	ImageWriteParam param;
 	private Object workerLock = new Object();
 	private boolean isFinish = true;
-	private ThreadPool runner;
+	private ThreadPoolExecutor runner;
 
-	public Tile(ThreadPool pool) {
+	public Tile(ThreadPoolExecutor pool) {
 		this.runner = pool;
 		
 		stream = new ByteArrayOutputStream();
@@ -85,7 +86,7 @@ public class Tile implements Runnable {
 			isFinish = false;
 			actImage = image;
 			
-			runner.start(this);
+			runner.execute(this);
 		}
 	}
 

@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -64,13 +65,21 @@ public abstract class SocketServer implements Runnable {
 		this.selector = selector();
 	}
 
+	protected AbstractSelectableChannel getChannel() {
+		return channel;
+	}
+
+	protected SelectableChannel getChannel(SelectionKey key) {
+		return key.channel();
+	}
+
 	private final Selector selector() throws IOException {
 		Selector selector = openSelector();
 		enableAttachments(channelRegister(selector));
 		return selector;
 	}
 
-	private void enableAttachments(SelectionKey key) {
+	protected void enableAttachments(SelectionKey key) {
 		key.attach(new Attachment());
 	}
 
@@ -116,11 +125,14 @@ public abstract class SocketServer implements Runnable {
 		}
 	}
 
-	private void cleanUp() {
+	protected void cleanUp() {
 		for (SelectionKey key : selector.keys()) {
-			close(key.channel());
+			close(getChannel(key));
 		}
 		close(selector);
+		if (getChannel().isOpen()) {
+			close(getChannel());
+		}
 	}
 
 	protected int getRecvBufferSize() {
@@ -136,8 +148,8 @@ public abstract class SocketServer implements Runnable {
 				Thread.sleep(10000);
 				if (selector.isOpen())
 					close(selector);
-				if (channel.isOpen())
-					close(channel);
+				if (getChannel().isOpen())
+					close(getChannel());
 
 				// try again
 				this.channel = channel(address);
@@ -195,10 +207,10 @@ public abstract class SocketServer implements Runnable {
 		enableAttachments(channel.register(selector, OP_READ));
 	}
 
-	protected final void read(SelectionKey key) throws IOException {
+	protected void read(SelectionKey key) throws IOException {
 		byte[] data;
 		int c = 0;
-		SocketChannel channel = (SocketChannel) key.channel();
+		SocketChannel channel = (SocketChannel) getChannel(key);
 		incomingBuffer.clear();
 
 		do {
@@ -292,7 +304,7 @@ public abstract class SocketServer implements Runnable {
 	public final void write(SelectionKey key) throws IOException {
 		ByteBuffer buffer;
 		while ((buffer = getWriteBuffer(key).peek()) != null) {
-			SocketChannel channel = (SocketChannel) key.channel();
+			SocketChannel channel = (SocketChannel) getChannel(key);
 
 			while (buffer.hasRemaining()) {
 

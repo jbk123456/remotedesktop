@@ -1,6 +1,7 @@
 package com.github.remotedesktop.socketserver;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.util.LinkedList;
 import java.util.logging.Logger;
@@ -12,10 +13,19 @@ public final class Attachment {
 	public LinkedList<ByteBuffer> writeBuffer = new LinkedList<>();
 	public ByteBuffer pushBackBuffer;
 	public String context;
+	public SelectableChannel channel;
 
 	public String toString() {
 		return "role: " + String.valueOf(role) + ", context: " + String.valueOf(context) + ", data: "
 				+ new String((writeBuffer.isEmpty()) ? new byte[0] : writeBuffer.get(0).array());
+	}
+
+	public static SelectableChannel channel(SelectionKey key) {
+		return ((Attachment) key.attachment()).channel;
+	}
+
+	public static void setChannel(SelectionKey key, SelectableChannel data) {
+		((Attachment) key.attachment()).channel = data;
 	}
 
 	public static LinkedList<ByteBuffer> getWriteBuffer(SelectionKey key) {
@@ -31,8 +41,9 @@ public final class Attachment {
 	}
 
 	public static void setPushBackBuffer(SelectionKey key, ByteBuffer data) {
-		if (data!=null) {
-		LOGGER.finest(String.format("will push back len %d data to push back buffer (%d)", data.remaining(), data.capacity()));
+		if (data != null) {
+			LOGGER.finest(String.format("will push back len %d data to push back buffer (%d) (%s)", data.remaining(),
+					data.capacity(), new String(data.array())));
 		}
 		((Attachment) key.attachment()).pushBackBuffer = data;
 	}

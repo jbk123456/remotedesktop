@@ -144,8 +144,9 @@ public class Launcher {
 			return new SocketServerBuilder<>(server).withPort(Config.http_port).withName("WebRTCHttpServer")
 					.withDataFilterPlugin(new WebSocketDataFilterPlugin<>(server))
 					.withServiceHandlerPlugin(new RemoteDesktopServicePingPlugin())
+					.withServiceHandlerPlugin(new WebRTCServerPlugin<>(server))
 					.withServiceHandlerPlugin(new DefaultRemoteDesktopServiceHandlerPlugin<>(server))
-					.withServiceHandlerPlugin(new WebRTCServerPlugin<>(server)).build();
+					.build();
 		} else {
 			return new SocketServerBuilder<>(server).withPort(Config.http_port).withName("HttpServer")
 					.withDataFilterPlugin(new WebSocketDataFilterPlugin<>(server))

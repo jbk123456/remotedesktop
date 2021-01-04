@@ -32,16 +32,16 @@ public class SocketServerClient extends SocketServer {
 
 	@Override
 	protected SelectionKey channelRegister(Selector selector) throws IOException {
-		return channel.register(selector, OP_CONNECT);
+		return getChannel().register(selector, OP_CONNECT);
 	}
 
 	public void writeToServerBuffer(ByteBuffer buffer) {
-		SelectionKey key = channel.keyFor(selector);
+		SelectionKey key = getChannel().keyFor(selector);
 		addWriteBuffer(key, buffer);
 	}
 
 	public void writeToServer(ByteBuffer buffer) throws IOException {
-		SelectionKey key = channel.keyFor(selector);
+		SelectionKey key = getChannel().keyFor(selector);
 
 		addWriteBuffer(key, buffer);
 		write(key);

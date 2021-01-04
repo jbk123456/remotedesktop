@@ -1,17 +1,20 @@
 package com.github.remotedesktop.socketserver.client;
 
 import java.awt.image.BufferedImage;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import com.github.remotedesktop.Config;
-import com.github.remotedesktop.ThreadPool;
+
 
 public class TileManager {
 	static final Logger LOGGER = Logger.getLogger(TileManager.class.getName());
 
 	public static final int MAX_TILE = Config.max_tile;
 
-	private ThreadPool pool;
+	private ThreadPoolExecutor pool;
 
 	private Tile tiles[][];
 	private int numxtile;
@@ -81,37 +84,16 @@ public class TileManager {
 		return numytile;
 	}
 
-//	public void updateQuality(float quality) {
-//		for (int i = 0; i < numxtile; i++) {
-//			for (int j = 0; j < numytile; j++) {
-//				Tile tile = tiles[i][j];
-//				synchronized (tile) {
-//					tile.updateQuality(quality);
-//				}
-//			}
-//		}
-//	}
-
-//	public void setDirty() {
-//		LOGGER.info("marking all tines as dirty");
-//		for (int i = 0; i < numxtile; i++) {
-//			for (int j = 0; j < numytile; j++) {
-//				synchronized (tiles[i][j]) {
-//					tiles[i][j].setDirty();
-//				}
-//			}
-//		}
-//	}
-
 	public void startRenderPool() {
 		LOGGER.info("tile manager start called");
-		pool = new ThreadPool(getClass().getName(), Config.threads);
+		pool = new ThreadPoolExecutor(Config.threads, Config.threads, 30, TimeUnit.SECONDS,
+				new LinkedBlockingQueue<Runnable>()); // Thread pool for executing long-running SSL tasks
 	}
 
 	public void stop() {
 		LOGGER.info("tile manager stop called");
 		if (pool != null) { // may happen if startRenderPool() wasn't called
-			pool.destroy();
+			pool.shutdownNow();
 		}
 	}
 }
