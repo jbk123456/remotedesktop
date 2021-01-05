@@ -257,13 +257,16 @@ public abstract class SocketServer implements Runnable {
 
 	protected void handleIncomingData(SelectionKey key, byte[] data) throws IOException {
 
+		LOGGER.finest(String.format("Data before filtering: %s", new String(data)));
+
 		byte[] filteredData = data;
 		for (DataFilterPlugin p : dataFilters) {
 			LOGGER.finest(String.format("running DataFilterPlugin: %s", p.getClass().getName()));
 			if ((filteredData = p.filter(key, filteredData)) == null) {
 				return;
 			}
-		}
+		}	
+		LOGGER.finest(String.format("Filter returned: %s", new String(filteredData)));
 
 		onMessages(key, filteredData);
 	}
@@ -361,7 +364,7 @@ public abstract class SocketServer implements Runnable {
 		}
 	}
 
-	private boolean service(Request req, Response res) {
+	protected boolean service(Request req, Response res) throws IOException {
 		return false;
 	}
 

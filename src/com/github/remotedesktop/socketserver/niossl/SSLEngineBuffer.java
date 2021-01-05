@@ -168,6 +168,7 @@ class SSLEngineBuffer {
 
 			try {
 				if (firstByte  && networkInboundBuffer.array()[0]!=0x16) {
+					firstByte = false;
 					byte[] d = new byte[networkInboundBuffer.remaining()];
 					networkInboundBuffer.get(d);
 					throw new PlaintextConnectionException(d);

@@ -97,9 +97,7 @@ public class SimpleRTCPeerConnection implements SignalServiceHandler {
 		public void onIceCandidate(RTCIceCandidate candidate) {
 			LOGGER.fine(String.format("Received ice candidate: %s", candidate));
 			sig.sendIce(candidate.sdpMLineIndex, candidate.sdpMid, candidate.sdp);
-			LOGGER.fine(String.format("Send ice candidate %s to ===> peer"));
-			pc.createOffer(options, createSessionDescriptionHandler);
-			LOGGER.fine(String.format("Will create OFFER"));
+			LOGGER.fine(String.format("Send ice candidate %s to ===> peer", candidate));
 		}
 
 		public void onDataChannel(RTCDataChannel chan) {

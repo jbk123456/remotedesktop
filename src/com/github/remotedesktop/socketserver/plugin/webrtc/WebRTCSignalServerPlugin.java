@@ -69,13 +69,13 @@ public class WebRTCSignalServerPlugin<T extends SocketServer> implements Service
 		sdp = sdp.replace("\r", "\\r");
 		sdp = sdp.replace("\n", "\\n");
 
-		icecandidateBuilder.append("{ \"sdpMLineIndex\": \"");
+		icecandidateBuilder.append("{ \"label\": \"");
 		icecandidateBuilder.append(sdpMLineIndex);
-		icecandidateBuilder.append("\", \"sdpMid\": \"");
+		icecandidateBuilder.append("\", \"id\": \"");
 		icecandidateBuilder.append(sdpMid);
-		icecandidateBuilder.append("\", \"sdp\": \"");
+		icecandidateBuilder.append("\", \"candidate\": \"");
 		icecandidateBuilder.append(sdp);
-		icecandidateBuilder.append("\" }");
+		icecandidateBuilder.append("\", \"type\": \"candidate\"}");
 
 		String s = String.format("GET /iceb?v=%s\r\n\r\n",
 				BASE64_ENCODER.encodeToString(icecandidateBuilder.toString().getBytes()));

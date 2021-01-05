@@ -20,7 +20,7 @@ public class Config {
 		DEFAULTS.put("default_http_port", "6502");
 		DEFAULTS.put("default_jpeg_quality", "0.5");
 		DEFAULTS.put("default_fps", "15.0");
-		DEFAULTS.put("default_lock", "trur");
+		DEFAULTS.put("default_lock", "false");
 		DEFAULTS.put("default_udp", "true");
 		DEFAULTS.put("default_threads", "8");
 		DEFAULTS.put("default_max_tile", "5");

@@ -19,19 +19,33 @@ public class DisplayServer extends SocketServerClient
 
 	static final Logger LOGGER = Logger.getLogger(DisplayServer.class.getName());
 
+	private static interface DataHandler {
+		public void writeToServer(ByteBuffer buffer) throws IOException;
+	};
 	private KVMManager kvmman;
 	private TileManager tileman;
 	private ScreenScanner scanner;
 	private KeepAlive keepalive;
 
 	private RTCDataChannel datachannel;
-
+	private final DataHandler defaultDataHandler = (buffer) -> this.writeToServer(buffer);
+	private final DataHandler rtcDataHandler = (buffer) -> this.writeToRTCServer(buffer);
+	private DataHandler dataHandler = defaultDataHandler;
+	
 	public DisplayServer() throws IOException, AWTException {
 		super();
 		kvmman = KVMManager.getInstance();
 		tileman = new TileManager();
 		scanner = new ScreenScanner(kvmman, tileman, this);
 		keepalive = new KeepAlive(kvmman);
+	}
+
+	public void writeToRTCServer(ByteBuffer buffer) throws IOException {
+		try {
+			datachannel.send(new RTCDataChannelBuffer(buffer, true));
+		} catch (Exception e) {
+			throw new IOException(e);
+		}
 	}
 
 	public void startDisplayServer() {
@@ -71,7 +85,8 @@ public class DisplayServer extends SocketServerClient
 
 		System.arraycopy(req, 0, data, 0, req.length);
 		System.arraycopy(tile.getData(), 0, data, req.length, tile.getData().length);
-		writeToServer(ByteBuffer.wrap(data));
+	//	writeToServer(ByteBuffer.wrap(data));
+		dataHandler.writeToServer(ByteBuffer.wrap(data));
 	}
 
 	@Override
@@ -112,25 +127,37 @@ public class DisplayServer extends SocketServerClient
 
 	@Override
 	public void onCreated(RTCDataChannel datachannel) {
+		LOGGER.info("RTC channel has been created!");
 		this.datachannel = datachannel;
-
 	}
 
 	@Override
 	public void onBufferedAmountChange(long previousAmount) {
-		System.out.println("onBufferedAmountChange");
+		LOGGER.info("onBufferedAmountChange");
 
 	}
 
 	@Override
 	public void onStateChange() {
-		System.out.println("on state change:::" + datachannel.getState());
+		switch(datachannel.getState()) {
+		case OPEN: 
+			LOGGER.info("switching to rtc data handler");
+			this.dataHandler = rtcDataHandler;
+			break;
+		case CLOSING:
+		case CLOSED:
+			LOGGER.info("switching to default data handler");
+			this.dataHandler = defaultDataHandler;
+			break;
+		default:
+			break;
+		}
 
 	}
 
 	@Override
 	public void onMessage(RTCDataChannelBuffer buffer) {
-		System.out.println("datachannel message received");
+		LOGGER.info("rtc data received");
 
 	}
 

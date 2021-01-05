@@ -42,8 +42,8 @@ public final class Attachment {
 
 	public static void setPushBackBuffer(SelectionKey key, ByteBuffer data) {
 		if (data != null) {
-			LOGGER.finest(String.format("will push back len %d data to push back buffer (%d) (%s)", data.remaining(),
-					data.capacity(), new String(data.array())));
+			LOGGER.finest(String.format("will push back len %d data to push back buffer (%d)", data.remaining(),
+					data.capacity()));
 		}
 		((Attachment) key.attachment()).pushBackBuffer = data;
 	}

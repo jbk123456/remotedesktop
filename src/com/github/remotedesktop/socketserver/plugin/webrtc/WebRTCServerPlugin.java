@@ -58,7 +58,7 @@ public class WebRTCServerPlugin<T extends SocketServer> implements ServiceHandle
 		}
 		case "/webrtcloaded": {
 			LOGGER.fine("WebRTC client initialized");
-			byte[] data = websocketProtocolParser.encodeFrame("GET /created 1\r\n\r\n");
+			byte[] data = websocketProtocolParser.encodeFrame("GET /created?v=1\r\n\r\n");
 			server.writeTo(req.getKey(), ByteBuffer.wrap(data));
 
 			return true;
