@@ -25,6 +25,7 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 	private TileManager tileman;
 	private ScreenScanner scanner;
 	private KeepAlive keepalive;
+	private LockScreen lockscreen;
 
 	public DisplayServer(String id, String hostname, int port) throws IOException, AWTException {
 		super(id, hostname, port);
@@ -33,6 +34,7 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 		tileman = new TileManager();
 		scanner = new ScreenScanner(kvmman, tileman, this);
 		keepalive = new KeepAlive(kvmman);
+		lockscreen = new LockScreen(kvmman);
 
 		setResponseHandler(this);
 	}
@@ -42,6 +44,7 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 		tileman.startRenderPool();
 		scanner.startScreenScanning();
 		keepalive.startKeepAlive();
+		lockscreen.startLockScreen();
 		super.start();
 	}
 
@@ -50,6 +53,7 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 		tileman.stop();
 		scanner.stop();
 		keepalive.stop();
+		lockscreen.stop();
 		super.stop();
 	}
 
@@ -127,6 +131,8 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 	private void handle(Request req, Response res) throws IOException {
 		String path = req.getURI().getPath();
 
+		lockscreen.hideLockScreen();
+		
 		switch (path) {
 		case "/k": {
 			kvmman.keyStroke(Integer.parseInt(req.getParam("k")), Integer.parseInt(req.getParam("v")),

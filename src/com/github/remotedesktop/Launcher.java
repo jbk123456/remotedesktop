@@ -32,7 +32,7 @@ public class Launcher {
 						+ "Usage: java -jar remotedesktop.jar --service=false --server=IP --port=6502: "
 						+ "Connects to HTTP Server reading mouse and keyboard data and sending it the current "
 						+ "desktop as a video stream.\r\nOther options: daemon (true/false) host, port, quality (0.0-1.0), "
-						+ "fps, debug (0-3), lock(true/false).");
+						+ "fps, debug (0-3), lock(true/false), lockscreen (in sec).");
 				System.exit(1);
 			}
 			if (args[i].toLowerCase().startsWith("--debug=")) {
@@ -66,6 +66,10 @@ public class Launcher {
 			}
 			if (args[i].toLowerCase().startsWith("--lock=")) {
 				Config.default_lock = args[i].split("=")[1];
+				refreshIni = true;
+			}
+			if (args[i].toLowerCase().startsWith("--lockscreen=")) {
+				Config.default_lockscreen = args[i].split("=")[1];
 				refreshIni = true;
 			}
 			if (args[i].toLowerCase().startsWith("--threads=")) {
@@ -103,6 +107,10 @@ public class Launcher {
 		}
 		if (System.getProperty(PREFIX + Config.LOCK) != null) {
 			Config.default_lock = System.getProperty(PREFIX + Config.LOCK);
+			refreshIni = true;
+		}
+		if (System.getProperty(PREFIX + Config.LOCKSCREEN) != null) {
+			Config.default_lockscreen = System.getProperty(PREFIX + Config.LOCKSCREEN);
 			refreshIni = true;
 		}
 		if (System.getProperty(PREFIX + Config.THREADS) != null) {

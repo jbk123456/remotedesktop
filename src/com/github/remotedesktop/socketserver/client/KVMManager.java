@@ -13,6 +13,7 @@ public abstract class KVMManager {
 
 	private Map<Integer, Integer> keymap;
 	private long lastInputTime = 0;
+	private long lastInteractionTime = 0;
 	private GraphicsEnvironment ge;
 	protected GraphicsDevice gd;
 
@@ -78,7 +79,7 @@ public abstract class KVMManager {
 			sendKeyPress(KeyEvent.VK_CONTROL);
 			sendKeyRelease(KeyEvent.VK_CONTROL);
 		}
-		setLastInputTime(getTime());
+		setLastInteractionTime(getTime());
 	}
 
 	public static final char[] EXTENDED = { 0xFF, 0xAD, 0x9B, 0x9C, 0x00, 0x9D, 0x00, 0x00, 0x00, 0x00, 0xA6, 0xAE,
@@ -103,25 +104,25 @@ public abstract class KVMManager {
 		}
 
 		sendKeyRelease(KeyEvent.VK_ALT);
-		setLastInputTime(getTime());
+		setLastInteractionTime(getTime());
 	}
 
 	protected void mouseMove(int x, int y) {
 		if (x > 0 && y > 0) {
 			sendMouseMove(x, y);
-			setLastInputTime(getTime());
+			setLastInteractionTime(getTime());
 		}
 	}
 
 	public void mousePress(int buttons) {
 
 		sendMousePress(buttons);
-		setLastInputTime(getTime());
+		setLastInteractionTime(getTime());
 	}
 
 	public void mouseRelease(int buttons) {
 		sendMouseRelease(buttons);
-		setLastInputTime(getTime());
+		setLastInteractionTime(getTime());
 	}
 
 	public long getTime() {
@@ -134,6 +135,15 @@ public abstract class KVMManager {
 
 	public void setLastInputTime(long lastInputTime) {
 		this.lastInputTime = lastInputTime;
+	}
+
+	public long getLastInteractionTime() {
+		return lastInteractionTime;
+	}
+
+	public void setLastInteractionTime(long lastInputTime) {
+		this.lastInteractionTime = lastInputTime;
+		setLastInputTime(lastInputTime);
 	}
 
 	public BufferedImage captureScreen() {
