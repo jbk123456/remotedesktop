@@ -8,7 +8,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 
 import com.github.remotedesktop.Config;
@@ -23,6 +22,7 @@ public class LockScreen implements Runnable {
 	private KVMManager kvmman;
 
 	private GraphicsDevice device;
+	private Frame frame;
 
 	private boolean lockScreenShown;
 
@@ -66,7 +66,7 @@ public class LockScreen implements Runnable {
 	}
 
 	private Frame getFrame() {
-		JFrame frame = new JFrame("screen lock");
+		JFrame frame = new JFrame("remotedesktop screen lock");
 		frame.setUndecorated(true);
 		frame.setResizable(false);
 		frame.setAlwaysOnTop(true);
@@ -82,10 +82,10 @@ public class LockScreen implements Runnable {
 	public void showLockScreen() {
 		if (!lockScreenShown) {
 			lockScreenShown = true;
-			System.out.println("lock screen");
 			SwingUtilities.invokeLater(new Runnable() {
+
 				public void run() {
-					device.setFullScreenWindow(getFrame());
+					device.setFullScreenWindow(frame = getFrame());
 				}
 			});
 		}
@@ -94,9 +94,9 @@ public class LockScreen implements Runnable {
 
 		if (lockScreenShown) {
 			lockScreenShown = false;
-			System.out.println("unlock screen");
 			SwingUtilities.invokeLater(new Runnable() {
 				public void run() {
+					frame.dispose();
 					device.setFullScreenWindow(null);
 				}
 			});
