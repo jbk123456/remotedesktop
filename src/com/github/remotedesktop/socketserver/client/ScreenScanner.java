@@ -32,7 +32,7 @@ public class ScreenScanner implements Runnable {
 		tileman.setSize(width, height);
 		while (running) {
 			try {
-				if (clientsConnected) {
+				if (!clientsConnected) {
 					Thread.sleep((long)(1000 / fps));
 					continue;
 				}
