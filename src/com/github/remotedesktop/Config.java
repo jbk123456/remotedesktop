@@ -15,7 +15,7 @@ public class Config {
 	public static String default_http_server = "localhost";
 	public static String default_http_port = "6502";
 	public static String default_jpeg_quality = "0.5";
-	public static String default_fps = "8.0";
+	public static String default_fps = "4.0";
 	public static String default_lock = "false";
 	public static String default_lockscreen = "0";
 	public static String default_threads = "8";
