@@ -206,7 +206,11 @@ public class HttpServer extends SocketServer {
 				}
 				if (sb.length() > 0) {
 					byte[] getImagesData = websocketProtocolParser.encodeFrame(sb.toString());
-					writeToGroup(SocketServerMulticastGroup.RECEIVER, ByteBuffer.wrap(getImagesData));
+					int n = writeToGroup(SocketServerMulticastGroup.RECEIVER, ByteBuffer.wrap(getImagesData));
+					if (n <= 0) { // notify last browser disconnect, stops screen capturer to send any further images
+						kvmman.disconnect(0);
+						writeToGroup(SocketServerMulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
+					}
 				}
 				break;
 			}

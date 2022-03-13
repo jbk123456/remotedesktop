@@ -135,26 +135,36 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 		
 		switch (path) {
 		case "/k": {
+			scanner.setClientsConnected(true);
 			kvmman.keyStroke(Integer.parseInt(req.getParam("k")), Integer.parseInt(req.getParam("v")),
 					Integer.parseInt(req.getParam("mask")));
 			break;
 		}
 		case "/m": {
+			scanner.setClientsConnected(true);
 			kvmman.mouseMove(Integer.parseInt(req.getParam("x")), Integer.parseInt(req.getParam("y")));
 			break;
 		}
 		case "/p": {
+			scanner.setClientsConnected(true);
 			kvmman.mousePress(Integer.parseInt(req.getParam("v")));
 			break;
 		}
 		case "/r": {
+			scanner.setClientsConnected(true);
 			kvmman.mouseRelease(Integer.parseInt(req.getParam("v")));
 			break;
 		}
 		case "/u": {
+			scanner.setClientsConnected(true);
 			updateConfig(req.getParam("k"), req.getParam("v"));
 			break;
 		}
+		case "/z": {
+			scanner.setClientsConnected(false);
+			break;
+		}
+
 		default: {
 			res.exception(HttpServer.HTTP_NOTFOUND, path + " not found");
 			break;

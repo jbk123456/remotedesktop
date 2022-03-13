@@ -15,6 +15,7 @@ public class ScreenScanner implements Runnable {
 	private TileOperations tileobs;
 	private Thread runner;
 	private boolean running = true;
+	private boolean clientsConnected = true; // need to send at least one screen initially
 	private float fps;
 	
 	public ScreenScanner(KVMManager kvmman, TileManager tileman, TileOperations tileobs) {
@@ -31,6 +32,10 @@ public class ScreenScanner implements Runnable {
 		tileman.setSize(width, height);
 		while (running) {
 			try {
+				if (clientsConnected) {
+					Thread.sleep((long)(1000 / fps));
+					continue;
+				}
 				long t0 = System.currentTimeMillis();
 				captureScreen = kvmman.captureScreen();
 				if (captureScreen.getHeight() != height || captureScreen.getWidth() != width) {
@@ -42,7 +47,7 @@ public class ScreenScanner implements Runnable {
 				notifyObservers(kvmman.getPointer());
 				long t1 = System.currentTimeMillis();
 				long td = t1 - t0;
-				int t = (int) (1000 / fps);
+				long t = (long) (1000 / fps);
 				long tsleep = t-td;
 				logger.finer(String.format("t: %d, td: %d, tsleep: %d, tcap: %d, tcreat: %d", t, td, tsleep, tcap, tcreat));
 				if (tsleep>0) {
@@ -83,6 +88,9 @@ public class ScreenScanner implements Runnable {
 
 	public void updateFps(float fps) {
 		this.fps = fps;
+	}
+	public void setClientsConnected(boolean b) {
+		this.clientsConnected=b;
 	}
 
 }

@@ -252,7 +252,7 @@ public abstract class SocketServer implements Runnable {
 		key.interestOps(OP_READ);
 	}
 
-	protected final void writeToGroup(SocketServerMulticastGroup role, ByteBuffer buffer) {
+	protected final int writeToGroup(SocketServerMulticastGroup role, ByteBuffer buffer) {
 		int clients = 0;
 		for (SelectionKey key : selector.keys()) {
 			if (role == getMulticastGroup(key)) {
@@ -265,12 +265,11 @@ public abstract class SocketServer implements Runnable {
 					// do not let the exception escape to top-level
 					// as this would cancel the wrong key
 					cancelKey(key);
+					clients--;
 				}
 			}
 		}
-		if (clients == 0) {
-			logger.finer("write to group: " + role + " nobody cares");
-		}
+		return clients;
 	}
 
 	protected final void writeTo(SelectionKey key, ByteBuffer buffer) throws IOException {
