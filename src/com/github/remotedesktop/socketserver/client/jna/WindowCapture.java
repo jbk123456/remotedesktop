@@ -154,7 +154,7 @@ public class WindowCapture {
 
 	interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
 
-		final Kernel32 INSTANCE = (Kernel32) Native.loadLibrary(Kernel32.class, W32APIOptions.UNICODE_OPTIONS);
+		final Kernel32 INSTANCE = (Kernel32) Native.load(Kernel32.class, W32APIOptions.UNICODE_OPTIONS);
 
 		int SetThreadExecutionState(int state);
 	}
@@ -235,7 +235,7 @@ public class WindowCapture {
 
 	public interface GDI32Extra extends GDI32 {
 
-		GDI32Extra INSTANCE = (GDI32Extra) Native.loadLibrary("gdi32", GDI32Extra.class, W32APIOptions.DEFAULT_OPTIONS);
+		GDI32Extra INSTANCE = (GDI32Extra) Native.load("gdi32", GDI32Extra.class, W32APIOptions.DEFAULT_OPTIONS);
 
 		public boolean BitBlt(HDC hObject, int nXDest, int nYDest, int nWidth, int nHeight, HDC hObjectSource,
 				int nXSrc, int nYSrc, DWORD dwRop);
@@ -244,7 +244,7 @@ public class WindowCapture {
 
 	public interface User32Extra extends User32 {
 
-		User32Extra INSTANCE = (User32Extra) Native.loadLibrary("user32", User32Extra.class,
+		User32Extra INSTANCE = (User32Extra) Native.load("user32", User32Extra.class,
 				W32APIOptions.DEFAULT_OPTIONS);
 
 		public HDC GetWindowDC(HWND hWnd);
