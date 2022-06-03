@@ -22,3 +22,8 @@
 hs_err_pid*
 /bin/
 /target/
+remotedesktop_displayserver_log.txt
+remotedesktop_displayserver_log.txt.lck
+remotedesktop_httpserver_log.txt
+remotedesktop.ini
+remotedesktop_httpserver_log.txt.lck

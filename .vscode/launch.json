@@ -3,19 +3,21 @@
     // Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
     // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "java",
-            "name": "Launch Current File",
-            "request": "launch",
-            "mainClass": "${file}"
-        },
+    "configurations": [       
         {
             "type": "java",
             "name": "Launch RemoteDesktopCapturer",
             "request": "launch",
             "mainClass": "com.github.remotedesktop.Launcher",
             "args": "--server=192.168.122.1",
+            "projectName": "remotedesktop"
+        },
+        {
+            "type": "java",
+            "name": "Launch RemoteDesktopServer",
+            "request": "launch",
+            "mainClass": "com.github.remotedesktop.Launcher",
+            "args": "--host=192.168.122.1 --service=true",
             "projectName": "remotedesktop"
         }
     ]

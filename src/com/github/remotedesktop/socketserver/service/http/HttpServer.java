@@ -245,6 +245,21 @@ public class HttpServer extends SocketServer {
 				writeToGroup(SocketServerMulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
 				break;
 			}
+			case "/connect": {
+				if (getMulticastGroup(key) == null) {
+					setDebugContext(key, "websocket request");
+					setMulticastGroup(key, SocketServerMulticastGroup.RECEIVER);
+					logger.fine("Browser connected: " + key.attachment());
+				}
+				kvmman.connect(0);
+				writeToGroup(SocketServerMulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
+				break;
+			}
+			case "/disconnect": {
+				kvmman.disconnect(0);
+				writeToGroup(SocketServerMulticastGroup.SENDER, ByteBuffer.wrap(kvmman.getBytes()));
+				break;
+			}
 			case "/sendMouse": {
 				int x = Integer.parseInt(req.getParam("x"));
 				int y = Integer.parseInt(req.getParam("y"));

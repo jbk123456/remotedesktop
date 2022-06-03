@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
 
+import com.github.remotedesktop.socketserver.SocketServer;
 import com.github.remotedesktop.socketserver.client.DisplayServer;
 import com.github.remotedesktop.socketserver.service.http.HttpServer;
 
@@ -157,7 +158,9 @@ public class Launcher {
 				DisplayServer displayServer = new DisplayServer("displayserver", Config.http_server, Config.http_port);
 				displayServer.startDisplayServer(); 
 				displayServer.waitForFinish();
-				logger.info("restarting displayserver");
+				logger.info("fatal exception occured (display change?) restarting...");
+				Thread.sleep(SocketServer.RETRY_TIMEOUT);
+				logger.info("... restart done");
 			}
 		}
 		if (startAsService) {

@@ -77,9 +77,14 @@ function startMouseButtonListener(canvas, callback) {
 
 function sendCtrl(url) {
 	if (document.visibilityState !== 'hidden') {
-		serverSocket.send("GET /" + url + "\r\n\r\n");
+		sendMsg(url);
 	}
 }
+
+function sendMsg(url) {
+	serverSocket.send("GET /" + url + "\r\n\r\n");
+}
+
 
 function updateMouse() {
 
@@ -94,6 +99,9 @@ function updateMouse() {
 
 function connectToServer() {
 	serverSocket = new WebSocket("ws://" + REMOTEDESKTOPHOST);
+	serverSocket.onopen = function(event) {
+		sendMsg("connect?c=" + Math.random());
+	}
 	serverSocket.onmessage = function(event) {
 		setTimeout(function() { eval(event.data); }, 1);
 
@@ -115,11 +123,13 @@ function load() {
 function visibilityListener(ev) {
 	if (document.visibilityState == 'hidden') {
 		if (serverSocket) {
+			sendMsg("disconnect?c=" + Math.random());
 			serverSocket.close();
 		}
-		//serverSocket = null;
+		serverSocket = null;
 	} else {
 		if (serverSocket) {
+			sendMsg("disconnect?c=" + Math.random());
 			serverSocket.close();
 		}
 		connectToServer();

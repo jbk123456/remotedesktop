@@ -75,6 +75,13 @@ public class KeyboardAndMouseSerializer {
 		b.append(separator);
 	}
 
+	public void connect(int status) {
+		b.append(command);
+		b.append("s?v=");
+		b.append(status);
+		b.append(separator);
+	}
+
 	public void disconnect(int status) {
 		b.append(command);
 		b.append("z?v=");

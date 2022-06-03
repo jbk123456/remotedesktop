@@ -160,6 +160,10 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 			updateConfig(req.getParam("k"), req.getParam("v"));
 			break;
 		}
+		case "/s": {
+			scanner.setClientsConnected(true);
+			break;
+		}
 		case "/z": {
 			scanner.setClientsConnected(false);
 			break;
