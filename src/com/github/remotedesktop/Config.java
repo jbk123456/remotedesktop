@@ -18,7 +18,7 @@ public class Config {
 	public static String default_fps = "4.0";
 	public static String default_lock = "false";
 	public static String default_lockscreen = "0";
-	public static String default_threads = "8";
+	public static String default_threads = "2";
 
 	private static Properties prop;
 
