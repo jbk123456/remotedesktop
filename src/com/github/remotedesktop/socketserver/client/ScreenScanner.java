@@ -84,6 +84,10 @@ public class ScreenScanner implements Runnable {
 	public void stop() {
 		logger.info("screen scanner stop called");
 		running = false;
+		if (runner != null) {
+			runner.interrupt();
+			runner = null;
+		}
 	}
 
 	public void updateFps(float fps) {

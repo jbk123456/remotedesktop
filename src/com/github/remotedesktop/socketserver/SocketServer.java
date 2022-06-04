@@ -42,6 +42,7 @@ public abstract class SocketServer implements Runnable {
 	protected Selector selector;
 	protected AbstractSelectableChannel channel;
 	protected final InetSocketAddress address;
+	private Thread runner;
 
 	public SocketServer(String id, String addr, int port) throws IOException {
 		this(id, addr == null ? new InetSocketAddress(port) : new InetSocketAddress(InetAddress.getByName(addr), port));
@@ -67,7 +68,7 @@ public abstract class SocketServer implements Runnable {
 
 
 	public void start() {
-		new Thread(this, id).start();
+		(runner = new Thread(this, id)).start();
 	}
 
 	public void stop() {
@@ -76,6 +77,10 @@ public abstract class SocketServer implements Runnable {
 				logger.info("socket server stop called");
 				running = false;
 				cleanUp();
+				if (runner != null) {
+					runner.interrupt();
+					runner = null;
+				}
 			}
 		}
 	}

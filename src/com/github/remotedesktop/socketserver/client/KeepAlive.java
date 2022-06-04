@@ -12,14 +12,23 @@ public class KeepAlive implements Runnable {
 	private boolean running = true;
 	private KVMManager kvmman;
 	private boolean numLockOn;
+	private static KeepAlive instance;
 
-	public KeepAlive(KVMManager kvmman) {
+	public static KeepAlive getInstance(KVMManager kvmman) {
+		if (instance != null) {
+			return instance;
+		}
+		return instance = new KeepAlive(kvmman);
+	}
+	
+	KeepAlive(KVMManager kvmman) {
 		this.kvmman = kvmman;
 	}
 
 	public void startKeepAlive() {
 		if (runner == null) {
 			runner = new Thread(this, getClass().getName());
+			runner.setDaemon(true);
 			runner.start();
 		}
 	}
@@ -32,7 +41,6 @@ public class KeepAlive implements Runnable {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				logger.log(Level.SEVERE, "received stop signal");
-				stop();
 			}
 		}
 		logger.info("keep alive stopped");
@@ -58,8 +66,7 @@ public class KeepAlive implements Runnable {
 	}
 
 	public void stop() {
-		logger.info("keep alive stop called");
-		running = false;
+		logger.info("keep alive stop called (ignored, i am a daemon)");
 	}
 
 }

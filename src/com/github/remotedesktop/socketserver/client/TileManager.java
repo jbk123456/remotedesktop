@@ -112,6 +112,7 @@ public class TileManager {
 		logger.info("tile manager stop called");
 		if (pool != null) { // may happen if startRenderPool() wasn't called
 			pool.destroy();
+			pool = null;
 		}
 	}
 }

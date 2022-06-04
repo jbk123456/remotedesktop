@@ -25,8 +25,16 @@ public class LockScreen implements Runnable {
 	private Frame frame;
 
 	private boolean lockScreenShown;
+	private static LockScreen instance;
 
-	public LockScreen(KVMManager kvmman) {
+	public static LockScreen getInstance(KVMManager kvmman) {
+		if (instance != null) {
+			return instance;
+		}
+		return instance = new LockScreen(kvmman);
+	}
+
+	LockScreen(KVMManager kvmman) {
 		this.kvmman = kvmman;
 		init();
 	}
@@ -34,6 +42,7 @@ public class LockScreen implements Runnable {
 	public void startLockScreen() {
 		if (runner == null) {
 			runner = new Thread(this, getClass().getName());
+			runner.setDaemon(true);
 			runner.start();
 		}
 	}
@@ -46,7 +55,6 @@ public class LockScreen implements Runnable {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				logger.log(Level.SEVERE, "received stop signal");
-				stop();
 			}
 		}
 		logger.info("lock screen stopped");
@@ -104,8 +112,7 @@ public class LockScreen implements Runnable {
 	}
 
 	public void stop() {
-		logger.info("keep alive stop called");
-		running = false;
+		logger.info("keep alive stop called (ignored, i am a daemon)");
 	}
 
 }

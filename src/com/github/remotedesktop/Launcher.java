@@ -152,12 +152,13 @@ public class Launcher {
 		if (!startAsService) {
 			setupLogger("remotedesktop_displayserver_log.txt");
 			logger.info(
-					"Display server started. Locking input. Press BRK key (FN-p) 3 times to terminate. Reporting to http server: "
+					"Display server started. Press BRK key (FN-p) 3 times to terminate screen lock. Reporting to http server: "
 							+ Config.http_server + ":" + Config.http_port);
 			while (true) {
 				DisplayServer displayServer = new DisplayServer("displayserver", Config.http_server, Config.http_port);
 				displayServer.startDisplayServer(); 
 				displayServer.waitForFinish();
+				displayServer.stop();
 				logger.info("fatal exception occured (display change?) restarting...");
 				Thread.sleep(SocketServer.RETRY_TIMEOUT);
 				logger.info("... restart done");

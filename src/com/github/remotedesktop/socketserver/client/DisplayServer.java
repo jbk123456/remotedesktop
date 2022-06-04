@@ -33,8 +33,8 @@ public class DisplayServer extends SocketServerClient implements ResponseHandler
 		kvmman = KVMManager.getInstance();
 		tileman = new TileManager();
 		scanner = new ScreenScanner(kvmman, tileman, this);
-		keepalive = new KeepAlive(kvmman);
-		lockscreen = new LockScreen(kvmman);
+		keepalive = KeepAlive.getInstance(kvmman);
+		lockscreen = LockScreen.getInstance(kvmman);
 
 		setResponseHandler(this);
 	}
